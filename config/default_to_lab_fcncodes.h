@@ -35,12 +35,14 @@
 /*
 ** TO_LAB command codes
 */
-#define TO_LAB_NOOP_CC            0 /*  no-op command     */
-#define TO_LAB_RESET_STATUS_CC    1 /*  reset status      */
-#define TO_LAB_ADD_PKT_CC         2 /*  add packet        */
-#define TO_LAB_SEND_DATA_TYPES_CC 3 /*  send data types   */
-#define TO_LAB_REMOVE_PKT_CC      4 /*  remove packet     */
-#define TO_LAB_REMOVE_ALL_PKT_CC  5 /*  remove all packet */
-#define TO_LAB_OUTPUT_ENABLE_CC   6 /*  output enable     */
+#define TO_LAB_NOOP_CC             0 /*  no-op command     */
+#define TO_LAB_RESET_STATUS_CC     1 /*  reset status      */
+#define TO_LAB_ADD_PKT_CC          2 /*  add packet        */
+#define TO_LAB_SEND_DATA_TYPES_CC  3 /*  send data types   */
+#define TO_LAB_REMOVE_PKT_CC       4 /*  remove packet     */
+#define TO_LAB_REMOVE_ALL_PKT_CC   5 /*  remove all packet */
+#define TO_LAB_OUTPUT_ENABLE_CC    6 /*  output enable     */
+#define TO_LAB_ENABLE_TM_FRAME_CC  7 /*  enable TM frame mode */
+#define TO_LAB_DISABLE_TM_FRAME_CC 8 /*  disable TM frame mode */
 
 #endif

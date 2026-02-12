@@ -57,6 +57,15 @@ typedef struct
     TO_LAB_Subs_t *  SubsTblPtr;
     CFE_TBL_Handle_t SubsTblHandle;
 
+    /* TM Transfer Frame Mode fields */
+    bool    tm_frame_mode_enabled;
+    uint8   tm_tfvn;              /* Transfer Frame Version Number */
+    uint16  tm_scid;              /* Spacecraft ID */
+    uint8   tm_vcid;              /* Virtual Channel ID */
+    uint8   tm_ocf_flag;          /* Operational Control Field flag */
+    uint8   tm_mc_frame_count;    /* Master Channel Frame Count (1 octet per 132.0-B-3) */
+    uint8   tm_vc_frame_count;    /* Virtual Channel Frame Count (1 octet per 132.0-B-3) */
+
 } TO_LAB_GlobalData_t;
 
 /************************************************************************
@@ -68,6 +77,7 @@ void  TO_LAB_openTLM(void);
 int32 TO_LAB_init(void);
 void  TO_LAB_process_commands(void);
 void  TO_LAB_forward_telemetry(void);
+CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame, uint16 *tm_frame_len);
 
 /******************************************************************************/
 

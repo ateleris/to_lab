@@ -44,9 +44,11 @@
 #define TO_LAB_ADDPKT_INF_EID        15
 #define TO_LAB_REMOVEPKT_INF_EID     16
 #define TO_LAB_REMOVEALLPKTS_INF_EID 17
-#define TO_LAB_NOOP_INF_EID          18
-#define TO_LAB_TBL_ERR_EID           19
-#define TO_LAB_ENCODE_ERR_EID        20
+#define TO_LAB_NOOP_INF_EID            18
+#define TO_LAB_TBL_ERR_EID             19
+#define TO_LAB_ENCODE_ERR_EID          20
+#define TO_LAB_ENABLE_TM_FRAME_INF_EID 21
+#define TO_LAB_DISABLE_TM_FRAME_INF_EID 22
 
 /******************************************************************************/
 

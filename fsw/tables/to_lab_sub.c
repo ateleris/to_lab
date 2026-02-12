@@ -39,6 +39,10 @@
 #include "sample_app_msgids.h"
 #endif
 
+#ifdef HAVE_APQS_APP
+#include "apqs_app_msgids.h"
+#endif
+
 #ifdef HAVE_HS
 #include "hs_msgids.h"
 #endif
@@ -57,6 +61,10 @@
 
 #ifdef HAVE_LC
 #include "lc_msgids.h"
+#endif
+
+#ifdef HAVE_CF
+#include "cf_msgids.h"
 #endif
 
 TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
@@ -83,6 +91,12 @@ TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
 #ifdef HAVE_SAMPLE_APP
                                       {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
 #endif
+#ifdef HAVE_APQS_APP
+                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HK_TLM_MID), {0, 0}, 4},
+                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
+                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_M2_MID), {0, 0}, 4},
+                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
+#endif
 #ifdef HAVE_HS
                                       {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0, 0}, 4},
 #endif
@@ -97,6 +111,10 @@ TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
 #endif
 #ifdef HAVE_LC
                                       {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_CF
+                                      {CFE_SB_MSGID_WRAP_VALUE(CF_HK_TLM_MID), {0, 0}, 4},
+                                      {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output (raw SpacePacket, no sec hdr) */
 #endif
 
                                       /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */

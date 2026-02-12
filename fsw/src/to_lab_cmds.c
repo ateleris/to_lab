@@ -230,3 +230,44 @@ CFE_Status_t TO_LAB_RemoveAllCmd(const TO_LAB_RemoveAllCmd_t *data)
     ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
     return CFE_SUCCESS;
 }
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_EnableTMFrameModeCmd() -- Enable TM Frame Mode           */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *data)
+{
+    TO_LAB_Global.tm_frame_mode_enabled = true;
+
+    /* Initialize TM frame parameters matching SA 41 configuration */
+    TO_LAB_Global.tm_tfvn       = 0;      /* Transfer Frame Version Number */
+    TO_LAB_Global.tm_scid       = 0x0003; /* Spacecraft ID */
+    TO_LAB_Global.tm_vcid       = 4;      /* Virtual Channel ID (SA 41) */
+    TO_LAB_Global.tm_ocf_flag   = 0;      /* No Operational Control Field */
+    TO_LAB_Global.tm_mc_frame_count = 0;  /* Reset Master Channel counter */
+    TO_LAB_Global.tm_vc_frame_count = 0;  /* Reset Virtual Channel counter */
+
+    CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
+                      "TO: TM Frame Mode ENABLED - SCID=0x%04X, VCID=%d",
+                      TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid);
+
+    ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
+    return CFE_SUCCESS;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_DisableTMFrameModeCmd() -- Disable TM Frame Mode         */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *data)
+{
+    TO_LAB_Global.tm_frame_mode_enabled = false;
+
+    CFE_EVS_SendEvent(TO_LAB_DISABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
+                      "TO: TM Frame Mode DISABLED - returning to raw space packet mode");
+
+    ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
+    return CFE_SUCCESS;
+}
