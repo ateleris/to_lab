@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -16,19 +16,19 @@
  * limitations under the License.
  ************************************************************************/
 
-/**
- * \file
- *  Define TO Lab CPU specific subscription table
- */
+ /**
+  * \file
+  *  Define TO Lab CPU specific subscription table
+  */
 
 #include "cfe_tbl_filedef.h" /* Required to obtain the CFE_TBL_FILEDEF macro definition */
 #include "cfe_sb_api_typedefs.h"
 #include "to_lab_tbl.h"
 #include "cfe_msgids.h"
 
-/*
-** Add the proper include file for the message IDs below
-*/
+  /*
+  ** Add the proper include file for the message IDs below
+  */
 #include "to_lab_msgids.h"
 
 #ifdef HAVE_CI_LAB
@@ -67,57 +67,61 @@
 #include "cf_msgids.h"
 #endif
 
-TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
-                                      {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4},
+TO_LAB_Subs_t Subscriptions = {
+    .Subs = {
+        /* CFS App Subscriptions (examples) */
+        {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4},
 
-                                      /* cFE Core subscriptions */
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DIAG_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_LONG_EVENT_MSG_MID), {0, 0}, 32},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_SHORT_EVENT_MSG_MID), {0, 0}, 32},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4},
+        /* cFE Core subscriptions */
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DIAG_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_LONG_EVENT_MSG_MID), {0, 0}, 32},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_SHORT_EVENT_MSG_MID), {0, 0}, 32},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4},
 
 #ifdef HAVE_CI_LAB
-                                      {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_SAMPLE_APP
-                                      {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_APQS_APP
-                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_M2_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_M2_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_HS
-                                      {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_FM
-                                      {CFE_SB_MSGID_WRAP_VALUE(FM_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(FM_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_SC
-                                      {CFE_SB_MSGID_WRAP_VALUE(SC_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(SC_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_DS
-                                      {CFE_SB_MSGID_WRAP_VALUE(DS_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(DS_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_LC
-                                      {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_CF
-                                      {CFE_SB_MSGID_WRAP_VALUE(CF_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output (raw SpacePacket, no sec hdr) */
+        {CFE_SB_MSGID_WRAP_VALUE(CF_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output (raw SpacePacket, no sec hdr) */
 #endif
 
-                                      /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
-                                      {CFE_SB_MSGID_RESERVED, {0, 0}, 0}}};
+        /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
+        {CFE_SB_MSGID_RESERVED, {0, 0}, 0}
+    }
+};
 
-CFE_TBL_FILEDEF(TO_LAB_Subs, TO_LAB_APP.TO_LAB_Subs, TO Lab Sub Tbl, to_lab_sub.tbl)
+CFE_TBL_FILEDEF(Subscriptions, TO_LAB.Subscriptions, TO Lab Sub Tbl, to_lab_sub.tbl)

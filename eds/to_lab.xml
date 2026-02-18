@@ -178,6 +178,11 @@
     <ComponentSet>
       <Component name="Application">
         <RequiredInterfaceSet>
+          <Interface name="Subscriptions" shortDescription="Message Subscription Table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="SubscriptionTable" />
+            </GenericTypeMapSet>
+          </Interface>
           <Interface name="CMD" shortDescription="Software bus telecommand interface" type="CFE_SB/Telecommand">
             <GenericTypeMapSet>
               <GenericTypeMap name="TelecommandDataType" type="CMD" />

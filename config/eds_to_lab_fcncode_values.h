@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -18,31 +18,22 @@
 
 /**
  * @file
- *   Specification for the TO_LAB command function codes
+ *   Specification for the CFE Executive Services (TO_LAB) command function codes
  *
  * @note
  *   This file should be strictly limited to the command/function code (CC)
  *   macro definitions.  Other definitions such as enums, typedefs, or other
  *   macros should be placed in the msgdefs.h or msg.h files.
  */
-#ifndef TO_LAB_FCNCODES_H
-#define TO_LAB_FCNCODES_H
+#ifndef EDS_TO_LAB_FCNCODES_H
+#define EDS_TO_LAB_FCNCODES_H
+
+#include "to_lab_eds_cc.h"
 
 /************************************************************************
  * Macro Definitions
  ************************************************************************/
 
-/*
-** TO_LAB command codes
-*/
-#define TO_LAB_NOOP_CC             0 /*  no-op command     */
-#define TO_LAB_RESET_STATUS_CC     1 /*  reset status      */
-#define TO_LAB_ADD_PKT_CC          2 /*  add packet        */
-#define TO_LAB_SEND_DATA_TYPES_CC  3 /*  send data types   */
-#define TO_LAB_REMOVE_PKT_CC       4 /*  remove packet     */
-#define TO_LAB_REMOVE_ALL_PKT_CC   5 /*  remove all packet */
-#define TO_LAB_OUTPUT_ENABLE_CC    6 /*  output enable     */
-#define TO_LAB_ENABLE_TM_FRAME_CC  7 /*  enable TM frame mode */
-#define TO_LAB_DISABLE_TM_FRAME_CC 8 /*  disable TM frame mode */
+#define TO_LAB_CCVAL(x) EDS_CONTAINER_TO_LAB_##x##_CC
 
 #endif

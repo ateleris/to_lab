@@ -18,33 +18,32 @@
 
 /**
  * @file
- *   Specification for the TO_LAB table structures
+ *   TO_LAB Application Public Definitions
  *
- * Provides default definitions for TO_LAB table structures
+ * This provides default values for configurable items that affect
+ * the interface(s) of this module.  This includes the CMD/TLM message
+ * interface, tables definitions, and any other data products that
+ * serve to exchange information with other entities.
  *
  * @note This file may be overridden/superceded by mission-provided definitions
  * either by overriding this header or by generating definitions from a command/data
  * dictionary tool.
  */
-#ifndef DEFAULT_TO_LAB_TBLSTRUCT_H
-#define DEFAULT_TO_LAB_TBLSTRUCT_H
+#ifndef TO_LAB_INTERFACE_CFG_H
+#define TO_LAB_INTERFACE_CFG_H
 
-/*************************************************************************
- * Includes
- *************************************************************************/
-#include "to_lab_tbldefs.h"
+#include "to_lab_interface_cfg_values.h"
 
-/************************************************************************
- * Macro Definitions
- ************************************************************************/
+/**
+ * @brief The base UDP port number that TO_LAB will send to
+ */
+#define TO_LAB_MISSION_TLM_PORT         TO_LAB_MISSION_CFGVAL(TLM_PORT)
+#define DEFAULT_TO_LAB_MISSION_TLM_PORT 2234
 
-/*************************************************************************
- * Type Definitions
- *************************************************************************/
-
-typedef struct
-{
-    TO_LAB_Sub_t Subs[TO_LAB_MISSION_MAX_SUBSCRIPTIONS];
-} TO_LAB_Subs_t;
+/**
+ * @brief The maximum number of subscriptions that TO_LAB can subscribe to
+ */
+#define TO_LAB_MISSION_MAX_SUBSCRIPTIONS         TO_LAB_MISSION_CFGVAL(MAX_SUBSCRIPTIONS)
+#define DEFAULT_TO_LAB_MISSION_MAX_SUBSCRIPTIONS 50
 
 #endif

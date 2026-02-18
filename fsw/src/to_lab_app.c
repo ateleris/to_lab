@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -70,7 +70,7 @@ void TO_LAB_AppMain(void)
     {
         CFE_ES_PerfLogExit(TO_LAB_MAIN_TASK_PERF_ID);
 
-        OS_TaskDelay(TO_LAB_TASK_MSEC);
+        OS_TaskDelay(TO_LAB_PLATFORM_TASK_MSEC);
 
         CFE_ES_PerfLogEntry(TO_LAB_MAIN_TASK_PERF_ID);
 
@@ -109,17 +109,18 @@ CFE_Status_t TO_LAB_init(void)
     uint16        i;
     char          ToTlmPipeName[16];
     uint16        ToTlmPipeDepth;
-    void         *TblPtr;
+    void *        TblPtr;
     TO_LAB_Sub_t *SubEntry;
     char          VersionString[TO_LAB_CFG_MAX_VERSION_STR_LEN];
 
     /* Zero out the global data structure */
     memset(&TO_LAB_Global, 0, sizeof(TO_LAB_Global));
 
-    TO_LAB_Global.downlink_on = false;
-    PipeDepth                 = TO_LAB_CMD_PIPE_DEPTH;
+    TO_LAB_Global.AllowPassthru = true;
+    TO_LAB_Global.downlink_on   = false;
+    PipeDepth                   = TO_LAB_PLATFORM_CMD_PIPE_DEPTH;
     strcpy(PipeName, "TO_LAB_CMD_PIPE");
-    ToTlmPipeDepth = TO_LAB_TLM_PIPE_DEPTH;
+    ToTlmPipeDepth = TO_LAB_PLATFORM_TLM_PIPE_DEPTH;
     strcpy(ToTlmPipeName, "TO_LAB_TLM_PIPE");
 
     /*
@@ -139,7 +140,7 @@ CFE_Status_t TO_LAB_init(void)
         CFE_MSG_Init(CFE_MSG_PTR(TO_LAB_Global.HkTlm.TelemetryHeader), CFE_SB_ValueToMsgId(TO_LAB_HK_TLM_MID),
                      sizeof(TO_LAB_Global.HkTlm));
 
-        status = CFE_TBL_Register(&TO_LAB_Global.SubsTblHandle, "TO_LAB_Subs", sizeof(TO_LAB_Subs_t),
+        status = CFE_TBL_Register(&TO_LAB_Global.SubsTblHandle, "Subscriptions", sizeof(TO_LAB_Subs_t),
                                   CFE_TBL_OPT_DEFAULT, NULL);
 
         if (status != CFE_SUCCESS)
@@ -203,7 +204,7 @@ CFE_Status_t TO_LAB_init(void)
     {
         /* Subscriptions for TLM pipe*/
         SubEntry = TO_LAB_Global.SubsTblPtr->Subs;
-        for (i = 0; i < TO_LAB_MAX_SUBSCRIPTIONS; i++)
+        for (i = 0; i < TO_LAB_MISSION_MAX_SUBSCRIPTIONS; i++)
         {
             if (!CFE_SB_IsValidMsgId(SubEntry->Stream))
             {
@@ -290,20 +291,21 @@ void TO_LAB_forward_telemetry(void)
     int32            OsStatus;
     CFE_Status_t     CfeStatus;
     CFE_SB_Buffer_t *SBBufPtr;
-    const void      *NetBufPtr;
+    const void *     NetBufPtr;
     size_t           NetBufSize;
     uint32           PktCount = 0;
+    uint16           PortNum = TO_LAB_MISSION_TLM_PORT + CFE_PSP_GetProcessorId() - 1;
     uint8            tm_frame_buf[2048];
     uint16           tm_frame_len;
 
     OS_SocketAddrInit(&d_addr, OS_SocketDomain_INET);
-    OS_SocketAddrSetPort(&d_addr, TO_LAB_TLM_PORT);
+    OS_SocketAddrSetPort(&d_addr, PortNum);
     OS_SocketAddrFromString(&d_addr, TO_LAB_Global.tlm_dest_IP);
     OsStatus = 0;
 
     do
     {
-        CfeStatus = CFE_SB_ReceiveBuffer(&SBBufPtr, TO_LAB_Global.Tlm_pipe, TO_LAB_TLM_PIPE_TIMEOUT);
+        CfeStatus = CFE_SB_ReceiveBuffer(&SBBufPtr, TO_LAB_Global.Tlm_pipe, TO_LAB_PLATFORM_TLM_PIPE_TIMEOUT);
 
         if ((CfeStatus == CFE_SUCCESS) && (TO_LAB_Global.suppress_sendto == false))
         {
@@ -366,7 +368,7 @@ void TO_LAB_forward_telemetry(void)
         /* If CFE_SB_status != CFE_SUCCESS, then no packet was received from CFE_SB_ReceiveBuffer() */
 
         PktCount++;
-    } while (CfeStatus == CFE_SUCCESS && PktCount < TO_LAB_MAX_TLM_PKTS);
+    } while (CfeStatus == CFE_SUCCESS && PktCount < TO_LAB_PLATFORM_MAX_TLM_PKTS);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

@@ -18,12 +18,13 @@
 
 /**
  * @file
- *   Define TO Lab Performance IDs
+ *   Specification for the TO_LAB topic ID values
  */
-#ifndef DEFAULT_TO_LAB_PERFIDS_H
-#define DEFAULT_TO_LAB_PERFIDS_H
+#ifndef EDS_TO_LAB_TOPICIDS_H
+#define EDS_TO_LAB_TOPICIDS_H
 
-#define TO_LAB_MAIN_TASK_PERF_ID   34
-#define TO_LAB_SOCKET_SEND_PERF_ID 35
+#include "cfe_mission_eds_designparameters.h"
+
+#define TO_LAB_MISSION_TIDVAL(x) EdsParam_CFE_MISSION_TO_LAB_##x##_TOPICID
 
 #endif

@@ -18,33 +18,29 @@
 
 /**
  * @file
- *   Specification for the TO_LAB table structures
+ *   Specification for the TO_LAB command function codes
  *
- * Provides default definitions for TO_LAB table structures
- *
- * @note This file may be overridden/superceded by mission-provided definitions
- * either by overriding this header or by generating definitions from a command/data
- * dictionary tool.
+ * @note
+ *   This file should be strictly limited to the command/function code (CC)
+ *   macro definitions.  Other definitions such as enums, typedefs, or other
+ *   macros should be placed in the msgdefs.h or msg.h files.
  */
-#ifndef DEFAULT_TO_LAB_TBLSTRUCT_H
-#define DEFAULT_TO_LAB_TBLSTRUCT_H
-
-/*************************************************************************
- * Includes
- *************************************************************************/
-#include "to_lab_tbldefs.h"
+#ifndef TO_LAB_FCNCODES_H
+#define TO_LAB_FCNCODES_H
 
 /************************************************************************
  * Macro Definitions
  ************************************************************************/
 
-/*************************************************************************
- * Type Definitions
- *************************************************************************/
-
-typedef struct
-{
-    TO_LAB_Sub_t Subs[TO_LAB_MISSION_MAX_SUBSCRIPTIONS];
-} TO_LAB_Subs_t;
+/*
+** TO_LAB command codes
+*/
+#define TO_LAB_NOOP_CC            0 /*  no-op command     */
+#define TO_LAB_RESET_STATUS_CC    1 /*  reset status      */
+#define TO_LAB_ADD_PKT_CC         2 /*  add packet        */
+#define TO_LAB_SEND_DATA_TYPES_CC 3 /*  send data types   */
+#define TO_LAB_REMOVE_PKT_CC      4 /*  remove packet     */
+#define TO_LAB_REMOVE_ALL_PKT_CC  5 /*  remove all packet */
+#define TO_LAB_OUTPUT_ENABLE_CC   6 /*  output enable     */
 
 #endif

@@ -18,33 +18,31 @@
 
 /**
  * @file
- *   Specification for the TO_LAB table structures
+ *   Specification for the CFE Executive Services (CFE_ES) command function codes
  *
- * Provides default definitions for TO_LAB table structures
- *
- * @note This file may be overridden/superceded by mission-provided definitions
- * either by overriding this header or by generating definitions from a command/data
- * dictionary tool.
+ * @note
+ *   This file should be strictly limited to the command/function code (CC)
+ *   macro definitions.  Other definitions such as enums, typedefs, or other
+ *   macros should be placed in the msgdefs.h or msg.h files.
  */
-#ifndef DEFAULT_TO_LAB_TBLSTRUCT_H
-#define DEFAULT_TO_LAB_TBLSTRUCT_H
-
-/*************************************************************************
- * Includes
- *************************************************************************/
-#include "to_lab_tbldefs.h"
+#ifndef DEFAULT_TO_LAB_FCNCODE_VALUES_H
+#define DEFAULT_TO_LAB_FCNCODE_VALUES_H
 
 /************************************************************************
  * Macro Definitions
  ************************************************************************/
 
-/*************************************************************************
- * Type Definitions
- *************************************************************************/
+#define TO_LAB_CCVAL(x) TO_LAB_FunctionCode_##x
 
-typedef struct
+enum TO_LAB_FunctionCode_
 {
-    TO_LAB_Sub_t Subs[TO_LAB_MISSION_MAX_SUBSCRIPTIONS];
-} TO_LAB_Subs_t;
+    TO_LAB_FunctionCode_NOOP            = 0,
+    TO_LAB_FunctionCode_RESET_STATUS    = 1,
+    TO_LAB_FunctionCode_ADD_PKT         = 2,
+    TO_LAB_FunctionCode_SEND_DATA_TYPES = 3,
+    TO_LAB_FunctionCode_REMOVE_PKT      = 4,
+    TO_LAB_FunctionCode_REMOVE_ALL_PKT  = 5,
+    TO_LAB_FunctionCode_OUTPUT_ENABLE   = 6,
+};
 
 #endif

@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -25,21 +25,15 @@
  * interface, tables definitions, and any other data products that
  * serve to exchange information with other entities.
  *
- * @note This file may be overridden/superceded by mission-provided defintions
+ * @note This file may be overridden/superceded by mission-provided definitions
  * either by overriding this header or by generating definitions from a command/data
  * dictionary tool.
  */
-#ifndef TO_LAB_INTERFACE_CFG_H
-#define TO_LAB_INTERFACE_CFG_H
+#ifndef EDS_TO_LAB_INTERFACE_CFG_H
+#define EDS_TO_LAB_INTERFACE_CFG_H
 
-/**
- * @brief The base UDP port number that TO_LAB will send to
- */
-#define TO_LAB_TLM_PORT 1235
+#include "to_lab_eds_designparameters.h"
 
-/**
- * @brief The maximum number of subscriptions that TO_LAB can subscribe to
- */
-#define TO_LAB_MAX_SUBSCRIPTIONS 32
+#define TO_LAB_MISSION_CFGVAL(x) EdsParam_TO_LAB_##x
 
 #endif

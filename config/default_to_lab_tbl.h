@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -24,8 +24,8 @@
  *   Constants and enumerated types related to these table structures
  *   are defined in to_lab_tbldefs.h.
  */
-#ifndef TO_LAB_TBL_H
-#define TO_LAB_TBL_H
+#ifndef DEFAULT_TO_LAB_TBL_H
+#define DEFAULT_TO_LAB_TBL_H
 
 #include "to_lab_tbldefs.h"
 #include "to_lab_tblstruct.h"

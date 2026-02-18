@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -18,14 +18,11 @@
 
 /**
  * @file
- *   TO_LAB Application Topic IDs
+ *   Specification for the TO_LAB topic ID values
  */
-#ifndef TO_LAB_TOPICIDS_H
-#define TO_LAB_TOPICIDS_H
+#ifndef DEFAULT_TO_LAB_TOPICID_VALUES_H
+#define DEFAULT_TO_LAB_TOPICID_VALUES_H
 
-#define CFE_MISSION_TO_LAB_CMD_TOPICID        0x80
-#define CFE_MISSION_TO_LAB_SEND_HK_TOPICID    0x81
-#define CFE_MISSION_TO_LAB_HK_TLM_TOPICID     0x80
-#define CFE_MISSION_TO_LAB_DATA_TYPES_TOPICID 0x81
+#define TO_LAB_MISSION_TIDVAL(x) DEFAULT_TO_LAB_MISSION_##x##_TOPICID
 
 #endif

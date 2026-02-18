@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -25,38 +25,46 @@
  * to items in this file only affect the local module and will be transparent
  * to external entities that are using the public interface(s).
  *
- * @note This file may be overridden/superceded by mission-provided defintions
+ * @note This file may be overridden/superceded by mission-provided definitions
  * either by overriding this header or by generating definitions from a command/data
  * dictionary tool.
  */
 #ifndef TO_LAB_INTERNAL_CFG_H
 #define TO_LAB_INTERNAL_CFG_H
 
+#include "to_lab_mission_cfg.h"
+#include "to_lab_internal_cfg_values.h"
+
 /*****************************************************************************/
 
 /**
  * @brief Main loop task delay
  */
-#define TO_LAB_TASK_MSEC 500 /* run at 2 Hz */
+#define TO_LAB_PLATFORM_TASK_MSEC         TO_LAB_PLATFORM_CFGVAL(TASK_MSEC)
+#define DEFAULT_TO_LAB_PLATFORM_TASK_MSEC (100) /* run at 10 Hz */
 
 /**
  * @brief Telemetry pipe timeout
  */
-#define TO_LAB_TLM_PIPE_TIMEOUT CFE_SB_POLL
+#define TO_LAB_PLATFORM_TLM_PIPE_TIMEOUT         TO_LAB_PLATFORM_CFGVAL(TLM_PIPE_TIMEOUT)
+#define DEFAULT_TO_LAB_PLATFORM_TLM_PIPE_TIMEOUT CFE_SB_POLL
 
 /**
  * @brief Maximum number of telemetry packets to send each wakeup
  */
-#define TO_LAB_MAX_TLM_PKTS OS_QUEUE_MAX_DEPTH
+#define TO_LAB_PLATFORM_MAX_TLM_PKTS         TO_LAB_PLATFORM_CFGVAL(MAX_TLM_PKTS)
+#define DEFAULT_TO_LAB_PLATFORM_MAX_TLM_PKTS OS_QUEUE_MAX_DEPTH
 
 /**
  * Depth of pipe for commands to the TO_LAB application itself
  */
-#define TO_LAB_CMD_PIPE_DEPTH 8
+#define TO_LAB_PLATFORM_CMD_PIPE_DEPTH         TO_LAB_PLATFORM_CFGVAL(CMD_PIPE_DEPTH)
+#define DEFAULT_TO_LAB_PLATFORM_CMD_PIPE_DEPTH 8
 
 /**
  * Depth of pipe for telemetry forwarded through the TO_LAB application
  */
-#define TO_LAB_TLM_PIPE_DEPTH OS_QUEUE_MAX_DEPTH
+#define TO_LAB_PLATFORM_TLM_PIPE_DEPTH         TO_LAB_PLATFORM_CFGVAL(TLM_PIPE_DEPTH)
+#define DEFAULT_TO_LAB_PLATFORM_TLM_PIPE_DEPTH OS_QUEUE_MAX_DEPTH
 
 #endif

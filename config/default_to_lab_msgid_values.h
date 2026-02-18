@@ -18,12 +18,15 @@
 
 /**
  * @file
- *   Define TO Lab Performance IDs
+ *   TO_LAB Application Topic IDs
  */
-#ifndef DEFAULT_TO_LAB_PERFIDS_H
-#define DEFAULT_TO_LAB_PERFIDS_H
+#ifndef DEFAULT_TO_LAB_MSGID_VALUES_H
+#define DEFAULT_TO_LAB_MSGID_VALUES_H
 
-#define TO_LAB_MAIN_TASK_PERF_ID   34
-#define TO_LAB_SOCKET_SEND_PERF_ID 35
+#include "cfe_core_api_base_msgids.h"
+#include "to_lab_topicids.h"
+
+#define TO_LAB_CMD_PLATFORM_MIDVAL(x) CFE_PLATFORM_CMD_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_##x##_TOPICID)
+#define TO_LAB_TLM_PLATFORM_MIDVAL(x) CFE_PLATFORM_TLM_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_##x##_TOPICID)
 
 #endif

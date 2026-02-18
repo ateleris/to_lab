@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -63,15 +63,15 @@ CFE_Status_t TO_LAB_EnableOutputCmd(const TO_LAB_EnableOutputCmd_t *data)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 CFE_Status_t TO_LAB_NoopCmd(const TO_LAB_NoopCmd_t *data)
 {
-  char VersionString[TO_LAB_CFG_MAX_VERSION_STR_LEN];
+    char VersionString[TO_LAB_CFG_MAX_VERSION_STR_LEN];
 
-  CFE_Config_GetVersionString(VersionString, TO_LAB_CFG_MAX_VERSION_STR_LEN, "TO Lab",
-                        TO_LAB_VERSION, TO_LAB_BUILD_CODENAME, TO_LAB_LAST_OFFICIAL);
+    CFE_Config_GetVersionString(VersionString, TO_LAB_CFG_MAX_VERSION_STR_LEN, "TO Lab", TO_LAB_VERSION,
+                                TO_LAB_BUILD_CODENAME, TO_LAB_LAST_OFFICIAL);
 
-  CFE_EVS_SendEvent(TO_LAB_NOOP_INF_EID, CFE_EVS_EventType_INFORMATION, "TO: NOOP command. %s", VersionString);
+    CFE_EVS_SendEvent(TO_LAB_NOOP_INF_EID, CFE_EVS_EventType_INFORMATION, "TO: NOOP command. %s", VersionString);
 
-  ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
-  return CFE_SUCCESS;
+    ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
+    return CFE_SUCCESS;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -211,7 +211,7 @@ CFE_Status_t TO_LAB_RemoveAllCmd(const TO_LAB_RemoveAllCmd_t *data)
     TO_LAB_Sub_t *SubEntry;
 
     SubEntry = TO_LAB_Global.SubsTblPtr->Subs;
-    for (i = 0; i < TO_LAB_MAX_SUBSCRIPTIONS; i++)
+    for (i = 0; i < TO_LAB_MISSION_MAX_SUBSCRIPTIONS; i++)
     {
         if (CFE_SB_IsValidMsgId(SubEntry->Stream))
         {

@@ -1,7 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2020 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -20,15 +20,15 @@
  * @file
  *   TO_LAB Application Message IDs
  */
-#ifndef TO_LAB_MSGIDS_H
-#define TO_LAB_MSGIDS_H
+#ifndef DEFAULT_TO_LAB_MSGIDS_H
+#define DEFAULT_TO_LAB_MSGIDS_H
 
 #include "cfe_core_api_base_msgids.h"
 #include "to_lab_topicids.h"
 
-#define TO_LAB_CMD_MID        CFE_PLATFORM_CMD_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_CMD_TOPICID)
-#define TO_LAB_SEND_HK_MID    CFE_PLATFORM_CMD_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_SEND_HK_TOPICID)
-#define TO_LAB_HK_TLM_MID     CFE_PLATFORM_TLM_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_HK_TLM_TOPICID)
-#define TO_LAB_DATA_TYPES_MID CFE_PLATFORM_TLM_TOPICID_TO_MIDV(CFE_MISSION_TO_LAB_DATA_TYPES_TOPICID)
+#define TO_LAB_CMD_MID        CFE_PLATFORM_CMD_TOPICID_TO_MIDV(TO_LAB_MISSION_CMD_TOPICID)
+#define TO_LAB_SEND_HK_MID    CFE_PLATFORM_CMD_TOPICID_TO_MIDV(TO_LAB_MISSION_SEND_HK_TOPICID)
+#define TO_LAB_HK_TLM_MID     CFE_PLATFORM_TLM_TOPICID_TO_MIDV(TO_LAB_MISSION_HK_TLM_TOPICID)
+#define TO_LAB_DATA_TYPES_MID CFE_PLATFORM_TLM_TOPICID_TO_MIDV(TO_LAB_MISSION_DATA_TYPES_TOPICID)
 
 #endif

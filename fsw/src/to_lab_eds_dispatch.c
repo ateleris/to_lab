@@ -35,15 +35,25 @@
 #include "to_lab_eds_dictionary.h"
 #include "to_lab_eds_dispatcher.h"
 
-static const EdsDispatchTable_TO_LAB_Application_CFE_SB_Telecommand_t TO_LAB_TC_DISPATCH_TABLE = {
-    .CMD     = {.AddPacketCmd_indication     = TO_LAB_AddPacketCmd,
-            .NoopCmd_indication          = TO_LAB_NoopCmd,
-            .EnableOutputCmd_indication  = TO_LAB_EnableOutputCmd,
-            .RemoveAllCmd_indication     = TO_LAB_RemoveAllCmd,
-            .RemovePacketCmd_indication  = TO_LAB_RemovePacketCmd,
-            .ResetCountersCmd_indication = TO_LAB_ResetCountersCmd,
-            .SendDataTypesCmd_indication = TO_LAB_SendDataTypesCmd},
-    .SEND_HK = {.indication = TO_LAB_SendHkCmd}};
+/* clang-format off */
+static const EdsDispatchTable_EdsComponent_TO_LAB_Application_CFE_SB_Telecommand_t TO_LAB_TC_DISPATCH_TABLE = 
+{
+    .CMD =
+    {
+        .AddPacketCmd_indication     = TO_LAB_AddPacketCmd,
+        .NoopCmd_indication          = TO_LAB_NoopCmd,
+        .EnableOutputCmd_indication  = TO_LAB_EnableOutputCmd,
+        .RemoveAllCmd_indication     = TO_LAB_RemoveAllCmd,
+        .RemovePacketCmd_indication  = TO_LAB_RemovePacketCmd,
+        .ResetCountersCmd_indication = TO_LAB_ResetCountersCmd,
+        .SendDataTypesCmd_indication = TO_LAB_SendDataTypesCmd
+    },
+    .SEND_HK =
+    {
+        .indication = TO_LAB_SendHkCmd
+    }
+};
+/* clang-format on */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
@@ -57,7 +67,7 @@ void TO_LAB_TaskPipe(const CFE_SB_Buffer_t *SbBufPtr)
     CFE_MSG_Size_t    MsgSize;
     CFE_MSG_FcnCode_t MsgFc;
 
-    status = EdsDispatch_TO_LAB_Application_Telecommand(SbBufPtr, &TO_LAB_TC_DISPATCH_TABLE);
+    status = EdsDispatch_EdsComponent_TO_LAB_Application_Telecommand(SbBufPtr, &TO_LAB_TC_DISPATCH_TABLE);
 
     if (status != CFE_SUCCESS)
     {

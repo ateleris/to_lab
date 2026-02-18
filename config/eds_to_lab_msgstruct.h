@@ -18,33 +18,15 @@
 
 /**
  * @file
- *   Specification for the TO_LAB table structures
- *
- * Provides default definitions for TO_LAB table structures
- *
- * @note This file may be overridden/superceded by mission-provided definitions
- * either by overriding this header or by generating definitions from a command/data
- * dictionary tool.
+ *   Specification for the TO_LAB command and telemetry
+ *   message data types.
  */
-#ifndef DEFAULT_TO_LAB_TBLSTRUCT_H
-#define DEFAULT_TO_LAB_TBLSTRUCT_H
-
-/*************************************************************************
- * Includes
- *************************************************************************/
-#include "to_lab_tbldefs.h"
+#ifndef EDS_TO_LAB_MSGSTRUCT_H
+#define EDS_TO_LAB_MSGSTRUCT_H
 
 /************************************************************************
- * Macro Definitions
+ * Includes
  ************************************************************************/
-
-/*************************************************************************
- * Type Definitions
- *************************************************************************/
-
-typedef struct
-{
-    TO_LAB_Sub_t Subs[TO_LAB_MISSION_MAX_SUBSCRIPTIONS];
-} TO_LAB_Subs_t;
+#include "to_lab_eds_typedefs.h"
 
 #endif

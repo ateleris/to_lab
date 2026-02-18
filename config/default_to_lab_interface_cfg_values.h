@@ -18,33 +18,21 @@
 
 /**
  * @file
- *   Specification for the TO_LAB table structures
+ *   TO_LAB Application Public Definitions
  *
- * Provides default definitions for TO_LAB table structures
+ * This provides default values for configurable items that affect
+ * the interface(s) of this module.  This includes the CMD/TLM message
+ * interface, tables definitions, and any other data products that
+ * serve to exchange information with other entities.
  *
- * @note This file may be overridden/superceded by mission-provided definitions
+ * @note This file may be overridden/superceded by mission-provided definitionsm
  * either by overriding this header or by generating definitions from a command/data
  * dictionary tool.
  */
-#ifndef DEFAULT_TO_LAB_TBLSTRUCT_H
-#define DEFAULT_TO_LAB_TBLSTRUCT_H
+#ifndef DEFAULT_TO_LAB_INTERFACE_CFG_VALUES_H
+#define DEFAULT_TO_LAB_INTERFACE_CFG_VALUES_H
 
-/*************************************************************************
- * Includes
- *************************************************************************/
-#include "to_lab_tbldefs.h"
-
-/************************************************************************
- * Macro Definitions
- ************************************************************************/
-
-/*************************************************************************
- * Type Definitions
- *************************************************************************/
-
-typedef struct
-{
-    TO_LAB_Sub_t Subs[TO_LAB_MISSION_MAX_SUBSCRIPTIONS];
-} TO_LAB_Subs_t;
+/* Use the default configuration value for all */
+#define TO_LAB_MISSION_CFGVAL(x) DEFAULT_TO_LAB_MISSION_##x
 
 #endif

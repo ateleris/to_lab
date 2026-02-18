@@ -18,12 +18,11 @@
 
 /**
  * @file
- *   Define TO Lab Performance IDs
+ *   Specification for the TO_LAB table definitions.
  */
-#ifndef DEFAULT_TO_LAB_PERFIDS_H
-#define DEFAULT_TO_LAB_PERFIDS_H
+#ifndef EDS_TO_LAB_TBLSTRUCT_H
+#define EDS_TO_LAB_TBLSTRUCT_H
 
-#define TO_LAB_MAIN_TASK_PERF_ID   34
-#define TO_LAB_SOCKET_SEND_PERF_ID 35
+#include "to_lab_eds_typedefs.h"
 
 #endif
