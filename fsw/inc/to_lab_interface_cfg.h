@@ -38,7 +38,7 @@
  * @brief The base UDP port number that TO_LAB will send to
  */
 #define TO_LAB_MISSION_TLM_PORT         TO_LAB_MISSION_CFGVAL(TLM_PORT)
-#define DEFAULT_TO_LAB_MISSION_TLM_PORT 2234
+#define DEFAULT_TO_LAB_MISSION_TLM_PORT 1235
 
 /**
  * @brief The maximum number of subscriptions that TO_LAB can subscribe to

@@ -124,4 +124,4 @@ TO_LAB_Subs_t Subscriptions = {
     }
 };
 
-CFE_TBL_FILEDEF(Subscriptions, TO_LAB.Subscriptions, TO Lab Sub Tbl, to_lab_sub.tbl)
+CFE_TBL_FILEDEF(Subscriptions, TO_LAB_APP.Subscriptions, TO Lab Sub Tbl, to_lab_sub.tbl)

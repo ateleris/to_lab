@@ -43,6 +43,8 @@ enum TO_LAB_FunctionCode_
     TO_LAB_FunctionCode_REMOVE_PKT      = 4,
     TO_LAB_FunctionCode_REMOVE_ALL_PKT  = 5,
     TO_LAB_FunctionCode_OUTPUT_ENABLE   = 6,
+    TO_LAB_FunctionCode_ENABLE_TM_FRAME = 7,
+    TO_LAB_FunctionCode_DISABLE_TM_FRAME = 8,
 };
 
 #endif
