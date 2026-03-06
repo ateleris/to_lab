@@ -106,7 +106,8 @@ typedef struct
 
 typedef struct
 {
-    CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
+    CFE_MSG_CommandHeader_t         CommandHeader; /**< \brief Command header */
+    TO_LAB_EnableTMFrame_Payload_t  Payload;       /**< \brief Command payload */
 } TO_LAB_EnableTMFrameModeCmd_t;
 
 typedef struct

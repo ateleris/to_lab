@@ -238,12 +238,22 @@ CFE_Status_t TO_LAB_RemoveAllCmd(const TO_LAB_RemoveAllCmd_t *data)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *data)
 {
+    uint8 vcid = data->Payload.VCID;
+
+    if (vcid > 7)
+    {
+        CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_ERROR,
+                          "TO: Enable TM Frame Mode rejected - VCID %d out of range (0-7)", vcid);
+        ++TO_LAB_Global.HkTlm.Payload.CommandErrorCounter;
+        return CFE_STATUS_WRONG_MSG_LENGTH;
+    }
+
     TO_LAB_Global.tm_frame_mode_enabled = true;
 
-    /* Initialize TM frame parameters matching SA 41 configuration */
+    /* Initialize TM frame parameters */
     TO_LAB_Global.tm_tfvn       = 0;      /* Transfer Frame Version Number */
     TO_LAB_Global.tm_scid       = 0x0003; /* Spacecraft ID */
-    TO_LAB_Global.tm_vcid       = 4;      /* Virtual Channel ID (SA 41) */
+    TO_LAB_Global.tm_vcid       = vcid;   /* Virtual Channel ID from command */
     TO_LAB_Global.tm_ocf_flag   = 0;      /* No Operational Control Field */
     TO_LAB_Global.tm_mc_frame_count = 0;  /* Reset Master Channel counter */
     TO_LAB_Global.tm_vc_frame_count = 0;  /* Reset Virtual Channel counter */

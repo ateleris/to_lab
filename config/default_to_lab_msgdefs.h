@@ -64,4 +64,9 @@ typedef struct
     char dest_IP[16];
 } TO_LAB_EnableOutput_Payload_t;
 
+typedef struct
+{
+    uint8 VCID; /* Virtual Channel ID (0-7) */
+} TO_LAB_EnableTMFrame_Payload_t;
+
 #endif
