@@ -79,6 +79,14 @@ void TO_LAB_ProcessGroundCommand(const CFE_SB_Buffer_t *SBBufPtr)
             TO_LAB_DisableTMFrameModeCmd((const TO_LAB_DisableTMFrameModeCmd_t *)SBBufPtr);
             break;
 
+        case TO_LAB_ENABLE_HK_CC:
+            TO_LAB_EnableHkCmd((const TO_LAB_EnableHkCmd_t *)SBBufPtr);
+            break;
+
+        case TO_LAB_DISABLE_HK_CC:
+            TO_LAB_DisableHkCmd((const TO_LAB_DisableHkCmd_t *)SBBufPtr);
+            break;
+
         default:
             CFE_EVS_SendEvent(TO_LAB_FNCODE_ERR_EID, CFE_EVS_EventType_ERROR,
                               "L%d TO: Invalid Function Code Rcvd In Ground Command 0x%x", __LINE__,

@@ -49,6 +49,9 @@
 #define TO_LAB_ENCODE_ERR_EID          20
 #define TO_LAB_ENABLE_TM_FRAME_INF_EID 21
 #define TO_LAB_DISABLE_TM_FRAME_INF_EID 22
+#define TO_LAB_ENABLE_HK_INF_EID  23
+#define TO_LAB_DISABLE_HK_INF_EID 24
+#define TO_LAB_HK_SUB_ERR_EID     25
 
 /******************************************************************************/
 

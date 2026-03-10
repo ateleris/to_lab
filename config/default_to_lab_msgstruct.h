@@ -115,4 +115,14 @@ typedef struct
     CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
 } TO_LAB_DisableTMFrameModeCmd_t;
 
+typedef struct
+{
+    CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
+} TO_LAB_EnableHkCmd_t;
+
+typedef struct
+{
+    CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
+} TO_LAB_DisableHkCmd_t;
+
 #endif /* TO_LAB_MSGSTRUCT_H */

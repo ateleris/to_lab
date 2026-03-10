@@ -44,5 +44,7 @@
 #define TO_LAB_OUTPUT_ENABLE_CC   6 /*  output enable     */
 #define TO_LAB_ENABLE_TM_FRAME_CC 7 /*  enable TM frame   */
 #define TO_LAB_DISABLE_TM_FRAME_CC 8 /*  disable TM frame  */
+#define TO_LAB_ENABLE_HK_CC       9  /*  enable HK tlm     */
+#define TO_LAB_DISABLE_HK_CC      10 /*  disable HK tlm    */
 
 #endif

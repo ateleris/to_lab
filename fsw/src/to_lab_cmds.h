@@ -43,6 +43,8 @@ CFE_Status_t TO_LAB_SendDataTypesCmd(const TO_LAB_SendDataTypesCmd_t *data);
 CFE_Status_t TO_LAB_SendHkCmd(const TO_LAB_SendHkCmd_t *data);
 CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *data);
 CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *data);
+CFE_Status_t TO_LAB_EnableHkCmd(const TO_LAB_EnableHkCmd_t *data);
+CFE_Status_t TO_LAB_DisableHkCmd(const TO_LAB_DisableHkCmd_t *data);
 
 /******************************************************************************/
 

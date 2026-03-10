@@ -70,15 +70,10 @@
 TO_LAB_Subs_t Subscriptions = {
     .Subs = {
         /* CFS App Subscriptions (examples) */
-        {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_HK_TLM_MID), {0, 0}, 4},
+        /* Note: HK MIDs are NOT subscribed by default - use TO_LAB_ENABLE_HK_CC (CC=9) to opt in */
         {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4},
 
-        /* cFE Core subscriptions */
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_HK_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_HK_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_HK_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_HK_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_HK_TLM_MID), {0, 0}, 4},
+        /* cFE Core subscriptions (non-HK) */
         {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DIAG_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4},
@@ -87,35 +82,12 @@ TO_LAB_Subs_t Subscriptions = {
         {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4},
 
-#ifdef HAVE_CI_LAB
-        {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_HK_TLM_MID), {0, 0}, 4},
-#endif
-#ifdef HAVE_SAMPLE_APP
-        {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
-#endif
 #ifdef HAVE_APQS_APP
-        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HK_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_M2_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
 #endif
-#ifdef HAVE_HS
-        {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0, 0}, 4},
-#endif
-#ifdef HAVE_FM
-        {CFE_SB_MSGID_WRAP_VALUE(FM_HK_TLM_MID), {0, 0}, 4},
-#endif
-#ifdef HAVE_SC
-        {CFE_SB_MSGID_WRAP_VALUE(SC_HK_TLM_MID), {0, 0}, 4},
-#endif
-#ifdef HAVE_DS
-        {CFE_SB_MSGID_WRAP_VALUE(DS_HK_TLM_MID), {0, 0}, 4},
-#endif
-#ifdef HAVE_LC
-        {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0, 0}, 4},
-#endif
 #ifdef HAVE_CF
-        {CFE_SB_MSGID_WRAP_VALUE(CF_HK_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output (raw SpacePacket, no sec hdr) */
 #endif
 

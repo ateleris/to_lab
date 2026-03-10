@@ -31,6 +31,28 @@
 #include "to_lab_msgids.h"
 #include "to_lab_version.h"
 
+#include "ci_lab_msgids.h"
+#include "apqs_app_msgids.h"
+#include "cfe_es_msgids.h"
+#include "cfe_evs_msgids.h"
+#include "cfe_sb_msgids.h"
+#include "cfe_tbl_msgids.h"
+#include "cfe_time_msgids.h"
+#include "cf_msgids.h"
+
+
+/* HK MIDs managed by TO_LAB_EnableHkCmd / TO_LAB_DisableHkCmd */
+static const CFE_SB_MsgId_Atom_t TO_LAB_HkMids[] = {
+    TO_LAB_HK_TLM_MID,
+    CFE_ES_HK_TLM_MID,
+    CFE_EVS_HK_TLM_MID,
+    CFE_SB_HK_TLM_MID,
+    CFE_TBL_HK_TLM_MID,
+    CFE_TIME_HK_TLM_MID,
+    CI_LAB_HK_TLM_MID,
+    APQS_APP_HK_TLM_MID,
+};
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
 /* TO_LAB_EnableOutput() -- TLM output enabled                     */
@@ -277,6 +299,74 @@ CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *
 
     CFE_EVS_SendEvent(TO_LAB_DISABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
                       "TO: TM Frame Mode DISABLED - returning to raw space packet mode");
+
+    ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
+    return CFE_SUCCESS;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_EnableHkCmd() -- Subscribe to all HK MIDs               */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+CFE_Status_t TO_LAB_EnableHkCmd(const TO_LAB_EnableHkCmd_t *data)
+{
+    int32  status;
+    size_t i;
+    int    count = 0;
+
+    for (i = 0; i < sizeof(TO_LAB_HkMids) / sizeof(TO_LAB_HkMids[0]); i++)
+    {
+        CFE_SB_MsgId_t mid = CFE_SB_ValueToMsgId(TO_LAB_HkMids[i]);
+        status = CFE_SB_SubscribeEx(mid, TO_LAB_Global.Tlm_pipe, CFE_SB_DEFAULT_QOS, 4);
+        if (status != CFE_SUCCESS && status != CFE_SB_PIPE_CR_ERR)
+        {
+            CFE_EVS_SendEvent(TO_LAB_HK_SUB_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "TO EnableHK: Subscribe failed for MID 0x%x status %i",
+                              (unsigned int)TO_LAB_HkMids[i], (int)status);
+        }
+        else
+        {
+            count++;
+        }
+    }
+
+    CFE_EVS_SendEvent(TO_LAB_ENABLE_HK_INF_EID, CFE_EVS_EventType_INFORMATION,
+                      "TO: HK telemetry ENABLED (%d MIDs subscribed)", count);
+
+    ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
+    return CFE_SUCCESS;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_DisableHkCmd() -- Unsubscribe from all HK MIDs          */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+CFE_Status_t TO_LAB_DisableHkCmd(const TO_LAB_DisableHkCmd_t *data)
+{
+    int32  status;
+    size_t i;
+    int    count = 0;
+
+    for (i = 0; i < sizeof(TO_LAB_HkMids) / sizeof(TO_LAB_HkMids[0]); i++)
+    {
+        CFE_SB_MsgId_t mid = CFE_SB_ValueToMsgId(TO_LAB_HkMids[i]);
+        status = CFE_SB_Unsubscribe(mid, TO_LAB_Global.Tlm_pipe);
+        if (status != CFE_SUCCESS)
+        {
+            CFE_EVS_SendEvent(TO_LAB_HK_SUB_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "TO DisableHK: Unsubscribe failed for MID 0x%x status %i",
+                              (unsigned int)TO_LAB_HkMids[i], (int)status);
+        }
+        else
+        {
+            count++;
+        }
+    }
+
+    CFE_EVS_SendEvent(TO_LAB_DISABLE_HK_INF_EID, CFE_EVS_EventType_INFORMATION,
+                      "TO: HK telemetry DISABLED (%d MIDs unsubscribed)", count);
 
     ++TO_LAB_Global.HkTlm.Payload.CommandCounter;
     return CFE_SUCCESS;
