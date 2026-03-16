@@ -51,6 +51,8 @@ static const CFE_SB_MsgId_Atom_t TO_LAB_HkMids[] = {
     CFE_TIME_HK_TLM_MID,
     CI_LAB_HK_TLM_MID,
     APQS_APP_HK_TLM_MID,
+    CFE_EVS_SHORT_EVENT_MSG_MID,
+    CFE_EVS_LONG_EVENT_MSG_MID,
 };
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
