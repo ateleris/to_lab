@@ -23,6 +23,7 @@
 
 #include "cfe.h"
 #include "cfe_config.h"
+#include <stdlib.h>
 
 #include "to_lab_app.h"
 #include "to_lab_encode.h"
@@ -228,6 +229,20 @@ CFE_Status_t TO_LAB_init(void)
 
         CFE_EVS_SendEvent(TO_LAB_INIT_INF_EID, CFE_EVS_EventType_INFORMATION,
                           "TO Lab Initialized.%s, Awaiting enable command.", VersionString);
+
+        /* Auto-enable output if TO_LAB_TLM_DEST_IP is set */
+        const char *auto_dest_ip = getenv("TO_LAB_TLM_DEST_IP");
+        if (auto_dest_ip != NULL && auto_dest_ip[0] != '\0')
+        {
+            strncpy(TO_LAB_Global.tlm_dest_IP, auto_dest_ip, sizeof(TO_LAB_Global.tlm_dest_IP) - 1);
+            TO_LAB_Global.tlm_dest_IP[sizeof(TO_LAB_Global.tlm_dest_IP) - 1] = '\0';
+            TO_LAB_Global.suppress_sendto = false;
+            TO_LAB_openTLM();
+            TO_LAB_Global.downlink_on = true;
+
+            CFE_EVS_SendEvent(TO_LAB_TLMOUTENA_INF_EID, CFE_EVS_EventType_INFORMATION,
+                              "TO: output auto-enabled for IP %s (from env)", TO_LAB_Global.tlm_dest_IP);
+        }
     }
 
     /*
