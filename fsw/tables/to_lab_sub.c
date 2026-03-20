@@ -86,7 +86,8 @@ TO_LAB_Subs_t Subscriptions = {
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_CF
-        {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output (raw SpacePacket, no sec hdr) */
+        {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output channel 0 (raw SpacePacket, no sec hdr) */
+        {CFE_SB_MSGID_WRAP_VALUE(0x08c3), {0, 0}, 8},  /* CF CFDP output channel 1 */
 #endif
 
         /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
