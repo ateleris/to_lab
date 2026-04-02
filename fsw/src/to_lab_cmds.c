@@ -281,6 +281,8 @@ CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *da
     TO_LAB_Global.tm_ocf_flag   = 0;      /* No Operational Control Field */
     TO_LAB_Global.tm_mc_frame_count = 0;  /* Reset Master Channel counter */
     TO_LAB_Global.tm_vc_frame_count = 0;  /* Reset Virtual Channel counter */
+    TO_LAB_Global.tm_span_len       = 0;  /* Clear any in-progress span */
+    TO_LAB_Global.tm_span_offset    = 0;
 
     CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
                       "TO: TM Frame Mode ENABLED - SCID=0x%04X, VCID=%d",
@@ -298,6 +300,8 @@ CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *da
 CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *data)
 {
     TO_LAB_Global.tm_frame_mode_enabled = false;
+    TO_LAB_Global.tm_span_len           = 0;  /* Discard any in-progress span */
+    TO_LAB_Global.tm_span_offset        = 0;
 
     CFE_EVS_SendEvent(TO_LAB_DISABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
                       "TO: TM Frame Mode DISABLED - returning to raw space packet mode");

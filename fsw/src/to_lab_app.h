@@ -67,6 +67,11 @@ typedef struct
     uint8   tm_mc_frame_count;    /* Master Channel Frame Count (1 octet per 132.0-B-3) */
     uint8   tm_vc_frame_count;    /* Virtual Channel Frame Count (1 octet per 132.0-B-3) */
 
+    /* TM frame spanning state for oversized Space Packets */
+    uint8   tm_span_buf[CFE_MISSION_SB_MAX_SB_MSG_SIZE]; /* Pending SP data; 0 = no span active */
+    uint32  tm_span_len;          /* Total bytes of pending SP (0 = no span active) */
+    uint32  tm_span_offset;       /* Bytes already sent from tm_span_buf */
+
 } TO_LAB_GlobalData_t;
 
 /************************************************************************

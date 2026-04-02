@@ -37,6 +37,16 @@
 #include "crypto.h"
 #include "crypto_error.h"
 
+/* TM Transfer Frame constants (CCSDS 132.0-B-3) */
+#define TM_FRAME_MAX_SIZE         1786
+#define SDLS_SECURITY_HEADER_SIZE 14
+#define TM_FRAME_HEADER_SIZE      6
+#define TM_DATA_FIELD_CAPACITY    (TM_FRAME_MAX_SIZE - TM_FRAME_HEADER_SIZE - SDLS_SECURITY_HEADER_SIZE)
+
+/* Data Field Status word components */
+#define TM_DFS_SEGMENT_LENGTH_ID  (0x3 << 11)   /* 11 = Space Packets (CCSDS 132.0-B-3 Table 4-3) */
+#define TM_FHP_CONTINUATION       0x7FE          /* No new packet starts in this frame */
+
 /*
 ** TO Global Data Section
 */
@@ -297,6 +307,99 @@ void TO_LAB_openTLM(void)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
+/* TO_LAB_WriteTMHeader() -- Build TM primary header into frame    */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
+{
+    uint16 tfvn_scid_vcid;
+    uint16 status_word;
+
+    /* Bytes 0-1: TFVN(2) + SCID(10) + VCID(3) + OCF_Flag(1) */
+    tfvn_scid_vcid = (TO_LAB_Global.tm_tfvn << 14) | (TO_LAB_Global.tm_scid << 4) |
+                     (TO_LAB_Global.tm_vcid << 1) | TO_LAB_Global.tm_ocf_flag;
+    tm_frame[0] = (tfvn_scid_vcid >> 8) & 0xFF;
+    tm_frame[1] = tfvn_scid_vcid & 0xFF;
+
+    /* Byte 2: Master Channel Frame Count */
+    tm_frame[2] = TO_LAB_Global.tm_mc_frame_count & 0xFF;
+
+    /* Byte 3: Virtual Channel Frame Count */
+    tm_frame[3] = TO_LAB_Global.tm_vc_frame_count & 0xFF;
+
+    /* Bytes 4-5: Transfer Frame Data Field Status
+     * Bit 15:    TF Secondary Header Flag = 0
+     * Bit 14:    Synch Flag = 0 (octet-synchronised, forward-ordered packets)
+     * Bit 13:    Packet Order Flag = 0
+     * Bits 12-11: Segment Length ID = 11 (Space Packets, CCSDS 132.0-B-3 Table 4-3)
+     * Bits 10-0:  First Header Pointer */
+    status_word = TM_DFS_SEGMENT_LENGTH_ID | (first_header_pointer & 0x7FF);
+    tm_frame[4] = (status_word >> 8) & 0xFF;
+    tm_frame[5] = status_word & 0xFF;
+
+    /* Bytes 6-19: Zero security header space (filled by Crypto_TM_ApplySecurity) */
+    memset(&tm_frame[TM_FRAME_HEADER_SIZE], 0, SDLS_SECURITY_HEADER_SIZE);
+
+    /* Increment frame counters */
+    TO_LAB_Global.tm_mc_frame_count++;
+    TO_LAB_Global.tm_vc_frame_count++;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_SendTMFrame() -- Encrypt and send one TM frame           */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAddr_t *d_addr)
+{
+    int32_t crypto_status = Crypto_TM_ApplySecurity(tm_frame, tm_frame_len);
+
+    if (crypto_status != CRYPTO_LIB_SUCCESS)
+    {
+        CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
+                          "TM frame encryption failed: %d", (int)crypto_status);
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+    }
+
+    return OS_SocketSendTo(TO_LAB_Global.TLMsockid, tm_frame, tm_frame_len, d_addr);
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_CreateContinuationFrame() -- Build next span frame       */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+static CFE_Status_t TO_LAB_CreateContinuationFrame(uint8 *tm_frame, uint16 *tm_frame_len)
+{
+    uint32 remaining = TO_LAB_Global.tm_span_len - TO_LAB_Global.tm_span_offset;
+    uint32 copy_len  = (remaining < TM_DATA_FIELD_CAPACITY) ? remaining : TM_DATA_FIELD_CAPACITY;
+
+    TO_LAB_WriteTMHeader(tm_frame, TM_FHP_CONTINUATION);
+
+    memcpy(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE],
+           &TO_LAB_Global.tm_span_buf[TO_LAB_Global.tm_span_offset],
+           copy_len);
+
+    if (copy_len < TM_DATA_FIELD_CAPACITY)
+    {
+        memset(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE + copy_len],
+               0x55, TM_DATA_FIELD_CAPACITY - copy_len);
+    }
+
+    TO_LAB_Global.tm_span_offset += copy_len;
+
+    if (TO_LAB_Global.tm_span_offset >= TO_LAB_Global.tm_span_len)
+    {
+        TO_LAB_Global.tm_span_len    = 0;
+        TO_LAB_Global.tm_span_offset = 0;
+    }
+
+    *tm_frame_len = TM_FRAME_MAX_SIZE;
+    return CFE_SUCCESS;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
 /* TO_LAB_forward_telemetry() -- Forward telemetry                 */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -333,24 +436,18 @@ void TO_LAB_forward_telemetry(void)
                 /* Check if TM frame mode is enabled */
                 if (TO_LAB_Global.tm_frame_mode_enabled)
                 {
-                    /* Create TM frame from space packet */
+                    /* Build and send first (or only) frame for this SP */
                     CfeStatus = TO_LAB_CreateTMFrame(SBBufPtr, tm_frame_buf, &tm_frame_len);
 
                     if (CfeStatus == CFE_SUCCESS)
                     {
-                        /* Apply CryptoLib encryption to TM frame */
-                        int32_t crypto_status = Crypto_TM_ApplySecurity(tm_frame_buf, tm_frame_len);
+                        OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr);
 
-                        if (crypto_status != CRYPTO_LIB_SUCCESS)
+                        /* Drain continuation frames if SP was too large for one frame */
+                        while (OsStatus >= 0 && TO_LAB_Global.tm_span_len > 0)
                         {
-                            CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
-                                              "TM frame encryption failed: %d", (int)crypto_status);
-                        }
-                        else
-                        {
-                            /* Send encrypted TM frame */
-                            OsStatus = OS_SocketSendTo(TO_LAB_Global.TLMsockid, tm_frame_buf,
-                                                       tm_frame_len, &d_addr);
+                            TO_LAB_CreateContinuationFrame(tm_frame_buf, &tm_frame_len);
+                            OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr);
                         }
                     }
                 }
@@ -393,11 +490,10 @@ void TO_LAB_forward_telemetry(void)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame, uint16 *tm_frame_len)
 {
-    uint16       tfvn_scid_vcid;
     size_t       pkt_len;
     CFE_Status_t status;
+    uint32       copy_len;
 
-    /* Get space packet length */
     status = CFE_MSG_GetSize(&BufPtr->Msg, &pkt_len);
     if (status != CFE_SUCCESS)
     {
@@ -406,80 +502,35 @@ CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame
         return status;
     }
 
-    /* SDLS Security Header size for SA 41:
-     * - SPI: 2 bytes
-     * - IV (shivf_len): 12 bytes
-     * - ARSN: 0 bytes (no sequence number for SA 41)
-     * Total: 14 bytes
-     */
-    #define SDLS_SECURITY_HEADER_SIZE 14
-    #define TM_FRAME_MAX_SIZE 1786
-
-    /* Check if packet fits in frame (6-byte TM header + 14-byte security header + packet data) */
-    if (pkt_len > (TM_FRAME_MAX_SIZE - 6 - SDLS_SECURITY_HEADER_SIZE))
+    if (pkt_len > CFE_MISSION_SB_MAX_SB_MSG_SIZE)
     {
         CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "TM Frame: Packet too large (%d bytes)", (int)pkt_len);
+                          "TM Frame: Packet size %d exceeds SB maximum", (int)pkt_len);
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
 
-    /* Build TM Transfer Frame Primary Header (6 bytes)
-     * CCSDS 132.0-B-3 TM Space Data Link Protocol
-     *
-     * Byte 0-1: TFVN(2) + SCID(10) + VCID(3) + OCF_Flag(1)
-     * Byte 2:   Master Channel Frame Count (1 octet)
-     * Byte 3:   Virtual Channel Frame Count (1 octet)
-     * Byte 4-5: Transfer Frame Data Field Status
-     */
+    copy_len = (pkt_len < TM_DATA_FIELD_CAPACITY) ? pkt_len : TM_DATA_FIELD_CAPACITY;
 
-    /* Construct first 16-bit word:
-     * Bits 0-1:   TFVN (Transfer Frame Version Number) = 0
-     * Bits 2-11:  SCID (Spacecraft ID) = tm_scid (left shift by 4)
-     * Bits 12-14: VCID (Virtual Channel ID) = tm_vcid (left shift by 1)
-     * Bit 15:     OCF_Flag (Operational Control Field flag)
-     */
-    tfvn_scid_vcid = (TO_LAB_Global.tm_tfvn << 14) | (TO_LAB_Global.tm_scid << 4) |
-                     (TO_LAB_Global.tm_vcid << 1) | TO_LAB_Global.tm_ocf_flag;
+    /* FHP = 0: SP header starts at byte 0 of the data field */
+    TO_LAB_WriteTMHeader(tm_frame, 0);
 
-    tm_frame[0] = (tfvn_scid_vcid >> 8) & 0xFF;
-    tm_frame[1] = tfvn_scid_vcid & 0xFF;
+    memcpy(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE], BufPtr, copy_len);
 
-    /* Master Channel Frame Count (1 octet) */
-    tm_frame[2] = TO_LAB_Global.tm_mc_frame_count & 0xFF;
-
-    /* Virtual Channel Frame Count (1 octet) */
-    tm_frame[3] = TO_LAB_Global.tm_vc_frame_count & 0xFF;
-
-    /* Transfer Frame Data Field Status (2 octets)
-     * Set to 0x0000 for now (no specific status) */
-    tm_frame[4] = 0x00;
-    tm_frame[5] = 0x00;
-
-    /* Reserve space for SDLS security header (14 bytes) - must be zeroed
-     * CryptoLib's Crypto_TM_ApplySecurity will fill this space with SPI and IV */
-    memset(&tm_frame[6], 0, SDLS_SECURITY_HEADER_SIZE);
-
-    /* Copy space packet data after TM header + security header space */
-    memcpy(&tm_frame[6 + SDLS_SECURITY_HEADER_SIZE], BufPtr, pkt_len);
-
-    /* Pad frame to fixed size for CryptoLib (1024 bytes)
-     * CryptoLib requires TM frames to be exactly max_frame_size
-     * Padding is added after the space packet data */
-    uint16 actual_data_len = 6 + SDLS_SECURITY_HEADER_SIZE + pkt_len;
-
-    if (actual_data_len < TM_FRAME_MAX_SIZE)
+    if (copy_len < TM_DATA_FIELD_CAPACITY)
     {
-        /* Zero-pad the remaining bytes */
-        memset(&tm_frame[actual_data_len], 0x55, TM_FRAME_MAX_SIZE - actual_data_len);
+        memset(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE + copy_len],
+               0x55, TM_DATA_FIELD_CAPACITY - copy_len);
     }
 
-    /* Return fixed frame size for CryptoLib */
+    /* If SP exceeds one frame, store remainder for continuation frames */
+    if (pkt_len > TM_DATA_FIELD_CAPACITY)
+    {
+        memcpy(TO_LAB_Global.tm_span_buf, (const uint8 *)BufPtr, pkt_len);
+        TO_LAB_Global.tm_span_len    = pkt_len;
+        TO_LAB_Global.tm_span_offset = copy_len;
+    }
+
     *tm_frame_len = TM_FRAME_MAX_SIZE;
-
-    /* Increment frame counters */
-    TO_LAB_Global.tm_mc_frame_count++;
-    TO_LAB_Global.tm_vc_frame_count++;
-
     return CFE_SUCCESS;
 }
 
