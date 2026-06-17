@@ -43,6 +43,11 @@ CFE_Status_t TO_LAB_SendDataTypesCmd(const TO_LAB_SendDataTypesCmd_t *data);
 CFE_Status_t TO_LAB_SendHkCmd(const TO_LAB_SendHkCmd_t *data);
 CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *data);
 CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *data);
+
+/* Enable TM frame mode on the given VCID (0-7). Shared by the command handler and the
+ * TO_LAB_TM_FRAME_VCID env-var auto-start; sets the TM frame params and derives the OCF
+ * flag from the CryptoLib managed parameters for the GVCID. */
+void TO_LAB_EnableTMFrameMode(uint8 vcid);
 CFE_Status_t TO_LAB_EnableHkCmd(const TO_LAB_EnableHkCmd_t *data);
 CFE_Status_t TO_LAB_DisableHkCmd(const TO_LAB_DisableHkCmd_t *data);
 

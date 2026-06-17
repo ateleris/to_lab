@@ -37,4 +37,6 @@ add_cfe_app(to_lab ${APP_SRC_FILES})
 add_cfe_tables(to_lab fsw/tables/to_lab_sub.c)
 
 target_include_directories(to_lab PUBLIC fsw/inc)
+# Mission defs hold the shared E2EQSS SDLS-GVCID config (e2eqss_sdls_cfg.h)
+target_include_directories(to_lab PRIVATE ${MISSION_DEFS})
 add_cfe_app_dependency(to_lab crypto)
