@@ -84,6 +84,7 @@ TO_LAB_Subs_t Subscriptions = {
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_LONG_MIRROR_TLM_MID), {0, 0}, 4},
         {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_PERF_HK_TLM_MID), {0, 0}, 4},
 #endif
 #ifdef HAVE_CF
         {CFE_SB_MSGID_WRAP_VALUE(0x00c8), {0, 0}, 8},  /* CF CFDP output channel 0 (raw SpacePacket, no sec hdr) */
