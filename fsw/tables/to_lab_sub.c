@@ -90,6 +90,10 @@ TO_LAB_Subs_t Subscriptions = {
         {CFE_SB_MSGID_WRAP_VALUE(0x08c3), {0, 0}, 8},  /* CF CFDP output channel 1 */
 #endif
 
+        /* SDLS Extended Procedures reply (published by CI_LAB on a dedicated EP-reply APID
+         * 0x07E -> MID 0x087E; NOT 0x0880, which is TO_LAB_HK_TLM_MID) */
+        {CFE_SB_MSGID_WRAP_VALUE(0x087E), {0, 0}, 4},
+
         /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
         {CFE_SB_MSGID_RESERVED, {0, 0}, 0}
     }
