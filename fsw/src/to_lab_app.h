@@ -39,6 +39,16 @@
 ** Type Definitions
 *************************************************************************/
 
+/* TM Transfer Frame layout constants (CCSDS 132.0-B-3). Shared by to_lab_app.c (frame
+ * builders) and to_lab_cmds.c (SA-derived geometry in TO_LAB_EnableTMFrameMode). The
+ * security-header and MAC sizes below are legacy fallbacks only; the real per-channel
+ * sizes are derived from the operational SA. */
+#define TM_FRAME_MAX_SIZE         1786
+#define SDLS_SECURITY_HEADER_SIZE 14
+#define TM_FRAME_HEADER_SIZE      6
+#define TM_MAC_SIZE               16
+#define TM_OCF_SIZE               4
+
 /**
  * CI global data structure
  */
@@ -66,6 +76,18 @@ typedef struct
     uint8   tm_ocf_flag;          /* Operational Control Field flag */
     uint8   tm_mc_frame_count;    /* Master Channel Frame Count (1 octet per 132.0-B-3) */
     uint8   tm_vc_frame_count;    /* Virtual Channel Frame Count (1 octet per 132.0-B-3) */
+
+    /* SDLS gate + SA-derived frame geometry (set in TO_LAB_EnableTMFrameMode) */
+    bool    tm_is_sdls;           /* GVCID is SDLS-protected (route through CryptoLib) */
+    bool    tm_has_fecf;          /* GVCID frame carries a FECF (frame-level CRC) */
+    uint16  tm_data_offset;       /* Byte offset where SP data begins (primary hdr + sec hdr) */
+    uint16  tm_data_capacity;     /* Usable SP data bytes per frame */
+
+    /* TM frame mode auto-start (from TO_LAB_TM_FRAME_VCID env var). Deferred to the first
+     * main-loop pass so CI_LAB has configured the CryptoLib managed params (needed to derive
+     * the OCF flag) before TO_LAB_EnableTMFrameMode() reads them. */
+    bool    tm_frame_autostart_pending;
+    uint8   tm_frame_autostart_vcid;
 
     /* TM frame spanning state for oversized Space Packets */
     uint8   tm_span_buf[CFE_MISSION_SB_MAX_SB_MSG_SIZE]; /* Pending SP data; 0 = no span active */

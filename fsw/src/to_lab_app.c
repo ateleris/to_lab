@@ -37,11 +37,10 @@
 #include "crypto.h"
 #include "crypto_error.h"
 
-/* TM Transfer Frame constants (CCSDS 132.0-B-3) */
-#define TM_FRAME_MAX_SIZE         1786
-#define SDLS_SECURITY_HEADER_SIZE 14
-#define TM_FRAME_HEADER_SIZE      6
-#define TM_DATA_FIELD_CAPACITY    (TM_FRAME_MAX_SIZE - TM_FRAME_HEADER_SIZE - SDLS_SECURITY_HEADER_SIZE)
+/* TM Transfer Frame layout constants (TM_FRAME_MAX_SIZE, TM_FRAME_HEADER_SIZE, ...) live in
+ * to_lab_app.h, shared with to_lab_cmds.c. The per-channel security-header / MAC sizes and the
+ * data-field offset/capacity are SA-derived and cached in TO_LAB_Global (tm_data_offset /
+ * tm_data_capacity) by TO_LAB_EnableTMFrameMode. */
 
 /* Data Field Status word components */
 #define TM_DFS_SEGMENT_LENGTH_ID  (0x3 << 11)   /* 11 = Space Packets (CCSDS 132.0-B-3 Table 4-3) */
@@ -84,6 +83,18 @@ void TO_LAB_AppMain(void)
         OS_TaskDelay(TO_LAB_PLATFORM_TASK_MSEC);
 
         CFE_ES_PerfLogEntry(TO_LAB_MAIN_TASK_PERF_ID);
+
+        /* Deferred TM frame mode auto-start (from TO_LAB_TM_FRAME_VCID env var). Done on the first
+         * main-loop pass rather than in init so CI_LAB has configured the CryptoLib managed params
+         * that TO_LAB_EnableTMFrameMode() reads to derive the OCF flag. */
+        if (TO_LAB_Global.tm_frame_autostart_pending)
+        {
+            TO_LAB_Global.tm_frame_autostart_pending = false;
+            TO_LAB_EnableTMFrameMode(TO_LAB_Global.tm_frame_autostart_vcid);
+            CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
+                              "TO: TM frame mode auto-started on VCID %d (from TO_LAB_TM_FRAME_VCID)",
+                              TO_LAB_Global.tm_frame_autostart_vcid);
+        }
 
         TO_LAB_forward_telemetry();
 
@@ -253,6 +264,26 @@ CFE_Status_t TO_LAB_init(void)
             CFE_EVS_SendEvent(TO_LAB_TLMOUTENA_INF_EID, CFE_EVS_EventType_INFORMATION,
                               "TO: output auto-enabled for IP %s (from env)", TO_LAB_Global.tlm_dest_IP);
         }
+
+        /* Auto-start TM frame mode if TO_LAB_TM_FRAME_VCID is set. Only record the request here;
+         * the activation itself is deferred to the first main-loop pass (see TO_LAB_AppMain) so
+         * CI_LAB has populated the CryptoLib managed params used to derive the OCF flag. */
+        const char *tm_frame_vcid_env = getenv("TO_LAB_TM_FRAME_VCID");
+        if (tm_frame_vcid_env != NULL && tm_frame_vcid_env[0] != '\0')
+        {
+            int env_vcid = atoi(tm_frame_vcid_env);
+            if (env_vcid >= 0 && env_vcid <= 7)
+            {
+                TO_LAB_Global.tm_frame_autostart_pending = true;
+                TO_LAB_Global.tm_frame_autostart_vcid    = (uint8)env_vcid;
+            }
+            else
+            {
+                CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_ERROR,
+                                  "TO: TO_LAB_TM_FRAME_VCID=%d out of range (0-7), TM frame auto-start skipped",
+                                  env_vcid);
+            }
+        }
     }
 
     /*
@@ -337,8 +368,9 @@ static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
     tm_frame[4] = (status_word >> 8) & 0xFF;
     tm_frame[5] = status_word & 0xFF;
 
-    /* Bytes 6-19: Zero security header space (filled by Crypto_TM_ApplySecurity) */
-    memset(&tm_frame[TM_FRAME_HEADER_SIZE], 0, SDLS_SECURITY_HEADER_SIZE);
+    /* Zero the SDLS security-header gap (filled by Crypto_TM_ApplySecurity). Its size is
+     * SA-derived; for clear channels tm_data_offset == TM_FRAME_HEADER_SIZE so nothing is written. */
+    memset(&tm_frame[TM_FRAME_HEADER_SIZE], 0, TO_LAB_Global.tm_data_offset - TM_FRAME_HEADER_SIZE);
 
     /* Increment frame counters */
     TO_LAB_Global.tm_mc_frame_count++;
@@ -350,15 +382,46 @@ static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
 /* TO_LAB_SendTMFrame() -- Encrypt and send one TM frame           */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Finalize a clear (non-SDLS) TM frame: no security header, no MAC. Write the frame-level
+ * OCF (CLCW) and FECF the ground expects directly, since CryptoLib is bypassed. */
+static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame)
+{
+    uint16 fecf_size = TO_LAB_Global.tm_has_fecf ? 2 : 0;
+
+    if (TO_LAB_Global.tm_ocf_flag)
+    {
+        /* 4-byte OCF/CLCW immediately before the FECF. Ground expects 0x01000000. */
+        uint16 ocf_loc        = TM_FRAME_MAX_SIZE - fecf_size - TM_OCF_SIZE;
+        tm_frame[ocf_loc + 0] = 0x01;
+        tm_frame[ocf_loc + 1] = 0x00;
+        tm_frame[ocf_loc + 2] = 0x00;
+        tm_frame[ocf_loc + 3] = 0x00;
+    }
+
+    if (TO_LAB_Global.tm_has_fecf)
+    {
+        uint16 fecf                     = Crypto_Calc_FECF(tm_frame, TM_FRAME_MAX_SIZE - 2);
+        tm_frame[TM_FRAME_MAX_SIZE - 2] = (fecf >> 8) & 0xFF;
+        tm_frame[TM_FRAME_MAX_SIZE - 1] = fecf & 0xFF;
+    }
+}
+
 static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAddr_t *d_addr)
 {
-    int32_t crypto_status = Crypto_TM_ApplySecurity(tm_frame, tm_frame_len);
-
-    if (crypto_status != CRYPTO_LIB_SUCCESS)
+    if (TO_LAB_Global.tm_is_sdls)
     {
-        CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "TM frame encryption failed: %d", (int)crypto_status);
-        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+        int32_t crypto_status = Crypto_TM_ApplySecurity(tm_frame, tm_frame_len);
+
+        if (crypto_status != CRYPTO_LIB_SUCCESS)
+        {
+            CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
+                              "TM frame encryption failed: %d", (int)crypto_status);
+            return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+        }
+    }
+    else
+    {
+        TO_LAB_FinalizeClearTMFrame(tm_frame);
     }
 
     return OS_SocketSendTo(TO_LAB_Global.TLMsockid, tm_frame, tm_frame_len, d_addr);
@@ -371,19 +434,18 @@ static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAdd
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static CFE_Status_t TO_LAB_CreateContinuationFrame(uint8 *tm_frame, uint16 *tm_frame_len)
 {
+    uint32 capacity  = TO_LAB_Global.tm_data_capacity;
     uint32 remaining = TO_LAB_Global.tm_span_len - TO_LAB_Global.tm_span_offset;
-    uint32 copy_len  = (remaining < TM_DATA_FIELD_CAPACITY) ? remaining : TM_DATA_FIELD_CAPACITY;
+    uint32 copy_len  = (remaining < capacity) ? remaining : capacity;
 
     TO_LAB_WriteTMHeader(tm_frame, TM_FHP_CONTINUATION);
 
-    memcpy(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE],
-           &TO_LAB_Global.tm_span_buf[TO_LAB_Global.tm_span_offset],
+    memcpy(&tm_frame[TO_LAB_Global.tm_data_offset], &TO_LAB_Global.tm_span_buf[TO_LAB_Global.tm_span_offset],
            copy_len);
 
-    if (copy_len < TM_DATA_FIELD_CAPACITY)
+    if (copy_len < capacity)
     {
-        memset(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE + copy_len],
-               0x55, TM_DATA_FIELD_CAPACITY - copy_len);
+        memset(&tm_frame[TO_LAB_Global.tm_data_offset + copy_len], 0x55, capacity - copy_len);
     }
 
     TO_LAB_Global.tm_span_offset += copy_len;
@@ -509,21 +571,21 @@ CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
 
-    copy_len = (pkt_len < TM_DATA_FIELD_CAPACITY) ? pkt_len : TM_DATA_FIELD_CAPACITY;
+    copy_len = (pkt_len < TO_LAB_Global.tm_data_capacity) ? pkt_len : TO_LAB_Global.tm_data_capacity;
 
     /* FHP = 0: SP header starts at byte 0 of the data field */
     TO_LAB_WriteTMHeader(tm_frame, 0);
 
-    memcpy(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE], BufPtr, copy_len);
+    memcpy(&tm_frame[TO_LAB_Global.tm_data_offset], BufPtr, copy_len);
 
-    if (copy_len < TM_DATA_FIELD_CAPACITY)
+    if (copy_len < TO_LAB_Global.tm_data_capacity)
     {
-        memset(&tm_frame[TM_FRAME_HEADER_SIZE + SDLS_SECURITY_HEADER_SIZE + copy_len],
-               0x55, TM_DATA_FIELD_CAPACITY - copy_len);
+        memset(&tm_frame[TO_LAB_Global.tm_data_offset + copy_len], 0x55,
+               TO_LAB_Global.tm_data_capacity - copy_len);
     }
 
     /* If SP exceeds one frame, store remainder for continuation frames */
-    if (pkt_len > TM_DATA_FIELD_CAPACITY)
+    if (pkt_len > TO_LAB_Global.tm_data_capacity)
     {
         memcpy(TO_LAB_Global.tm_span_buf, (const uint8 *)BufPtr, pkt_len);
         TO_LAB_Global.tm_span_len    = pkt_len;
