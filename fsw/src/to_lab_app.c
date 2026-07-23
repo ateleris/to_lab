@@ -34,8 +34,7 @@
 #include "to_lab_msg.h"
 #include "to_lab_tbl.h"
 
-#include "crypto.h"
-#include "crypto_error.h"
+#include "apqs_api.h"
 
 /* TM Transfer Frame layout constants (TM_FRAME_MAX_SIZE, TM_FRAME_HEADER_SIZE, ...) live in
  * to_lab_app.h, shared with to_lab_cmds.c. The per-channel security-header / MAC sizes and the
@@ -400,7 +399,7 @@ static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame)
 
     if (TO_LAB_Global.tm_has_fecf)
     {
-        uint16 fecf                     = Crypto_Calc_FECF(tm_frame, TM_FRAME_MAX_SIZE - 2);
+        uint16 fecf                     = apqs_Calc_FECF(tm_frame, TM_FRAME_MAX_SIZE - 2);
         tm_frame[TM_FRAME_MAX_SIZE - 2] = (fecf >> 8) & 0xFF;
         tm_frame[TM_FRAME_MAX_SIZE - 1] = fecf & 0xFF;
     }
@@ -410,7 +409,7 @@ static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAdd
 {
     if (TO_LAB_Global.tm_is_sdls)
     {
-        int32_t crypto_status = Crypto_TM_ApplySecurity(tm_frame, tm_frame_len);
+        int32_t crypto_status = apqs_TM_ApplySecurity(tm_frame, tm_frame_len);
 
         if (crypto_status != CRYPTO_LIB_SUCCESS)
         {

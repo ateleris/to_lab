@@ -40,10 +40,7 @@
 #include "cfe_time_msgids.h"
 #include "cf_msgids.h"
 
-#include "crypto.h"
-#include "crypto_error.h"
-#include "e2eqss_sdls_cfg.h"
-
+#include "apqs_api.h"
 
 /* HK MIDs managed by TO_LAB_EnableHkCmd / TO_LAB_DisableHkCmd */
 static const CFE_SB_MsgId_Atom_t TO_LAB_HkMids[] = {
@@ -271,9 +268,9 @@ CFE_Status_t TO_LAB_RemoveAllCmd(const TO_LAB_RemoveAllCmd_t *data)
 static bool TO_LAB_FindTmManagedParams(uint8 tfvn, uint16 scid, uint8 vcid, GvcidManagedParameters_t *out)
 {
     int i;
-    for (i = 0; i < gvcid_counter; i++)
+    for (i = 0; i < apqs_get_gvcid_counter(); i++)
     {
-        const GvcidManagedParameters_t *mp = &gvcid_managed_parameters_array[i];
+        const GvcidManagedParameters_t* mp = &apqs_get_gvcid_managed_parameters_array()[i];
         if (mp->tfvn == tfvn && mp->scid == scid && mp->vcid == vcid &&
             (mp->has_ocf == TM_HAS_OCF || mp->has_ocf == TM_NO_OCF))
         {
@@ -318,7 +315,7 @@ void TO_LAB_EnableTMFrameMode(uint8 vcid)
     if (TO_LAB_Global.tm_is_sdls)
     {
         SecurityAssociation_t *sa = NULL;
-        if (sa_if->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid,
+        if (apqs_get_sa_if()->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid,
                                                     TO_LAB_Global.tm_vcid, 0, &sa) == CRYPTO_LIB_SUCCESS)
         {
             sec_hdr_size = SPI_LEN + sa->shivf_len + sa->shsnf_len + sa->shplf_len;
