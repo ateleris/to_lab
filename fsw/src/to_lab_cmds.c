@@ -260,27 +260,6 @@ CFE_Status_t TO_LAB_RemoveAllCmd(const TO_LAB_RemoveAllCmd_t *data)
 /* TO_LAB_EnableTMFrameModeCmd() -- Enable TM Frame Mode           */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-/* Find the TM managed parameters for a GVCID. Crypto_Get_Managed_Parameters_For_Gvcid()
- * matches by (tfvn,scid,vcid) only and returns the FIRST entry, which is the TC entry when
- * TC and TM share a VCID (e.g. the bootstrap channel scid=3/vcid=0). TM entries are
- * distinguished by has_ocf carrying a TM value (TM_NO_OCF / TM_HAS_OCF) rather than
- * TC_OCF_NA, so scan for that. */
-static bool TO_LAB_FindTmManagedParams(uint8 tfvn, uint16 scid, uint8 vcid, GvcidManagedParameters_t *out)
-{
-    int i;
-    for (i = 0; i < apqs_get_gvcid_counter(); i++)
-    {
-        const GvcidManagedParameters_t* mp = &apqs_get_gvcid_managed_parameters_array()[i];
-        if (mp->tfvn == tfvn && mp->scid == scid && mp->vcid == vcid &&
-            (mp->has_ocf == TM_HAS_OCF || mp->has_ocf == TM_NO_OCF))
-        {
-            *out = *mp;
-            return true;
-        }
-    }
-    return false;
-}
-
 void TO_LAB_EnableTMFrameMode(uint8 vcid)
 {
     TO_LAB_Global.tm_frame_mode_enabled = true;
@@ -291,12 +270,15 @@ void TO_LAB_EnableTMFrameMode(uint8 vcid)
     TO_LAB_Global.tm_vcid = vcid;   /* Virtual Channel ID */
 
     /* Frame shape (OCF / FECF presence) comes from this GVCID's TM managed parameters;
-     * default to none if the GVCID has no TM managed parameters configured. */
-    GvcidManagedParameters_t gvcid_params;
-    uint16                   ocf_size  = 0;
-    uint16                   fecf_size = 0;
-    if (TO_LAB_FindTmManagedParams(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid,
-                                   &gvcid_params))
+     * default to none if the GVCID has no TM managed parameters configured. Since
+     * CryptoLib v1.5.0 the TM entries live in their own typed array, so a shared
+     * TC/TM VCID no longer needs disambiguation. */
+    TMGvcidManagedParameters_t gvcid_params;
+    uint16                     ocf_size  = 0;
+    uint16                     fecf_size = 0;
+    if (apqs_Get_TM_Managed_Parameters_For_Gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid,
+                                                 apqs_get_tm_gvcid_managed_parameters_array(),
+                                                 &gvcid_params) == CRYPTO_LIB_SUCCESS)
     {
         ocf_size  = (gvcid_params.has_ocf == TM_HAS_OCF) ? TM_OCF_SIZE : 0;
         fecf_size = (gvcid_params.has_fecf == TM_HAS_FECF) ? 2 : 0;
