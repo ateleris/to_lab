@@ -44,15 +44,8 @@
 
 /* HK MIDs managed by TO_LAB_EnableHkCmd / TO_LAB_DisableHkCmd */
 static const CFE_SB_MsgId_Atom_t TO_LAB_HkMids[] = {
-    TO_LAB_HK_TLM_MID,
-    CFE_ES_HK_TLM_MID,
-    CFE_EVS_HK_TLM_MID,
-    CFE_SB_HK_TLM_MID,
-    CFE_TBL_HK_TLM_MID,
-    CFE_TIME_HK_TLM_MID,
-    CI_LAB_HK_TLM_MID,
-    CFE_EVS_SHORT_EVENT_MSG_MID,
-    CFE_EVS_LONG_EVENT_MSG_MID,
+    TO_LAB_HK_TLM_MID,   CFE_ES_HK_TLM_MID, CFE_EVS_HK_TLM_MID,          CFE_SB_HK_TLM_MID,          CFE_TBL_HK_TLM_MID,
+    CFE_TIME_HK_TLM_MID, CI_LAB_HK_TLM_MID, CFE_EVS_SHORT_EVENT_MSG_MID, CFE_EVS_LONG_EVENT_MSG_MID,
 };
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -264,64 +257,21 @@ void TO_LAB_EnableTMFrameMode(uint8 vcid)
 {
     TO_LAB_Global.tm_frame_mode_enabled = true;
 
-    /* Initialize TM frame parameters */
-    TO_LAB_Global.tm_tfvn = 0;      /* Transfer Frame Version Number */
-    TO_LAB_Global.tm_scid = 0x0003; /* Spacecraft ID */
-    TO_LAB_Global.tm_vcid = vcid;   /* Virtual Channel ID */
+    TO_LAB_Global.tm_tfvn         = 0;    /* Transfer Frame Version Number */
+    TO_LAB_Global.tm_scid         = 4;    /* Spacecraft ID */
+    TO_LAB_Global.tm_default_vcid = vcid; /* VC for MIDs without a table assignment */
 
-    /* Frame shape (OCF / FECF presence) comes from this GVCID's TM managed parameters;
-     * default to none if the GVCID has no TM managed parameters configured. Since
-     * CryptoLib v1.5.0 the TM entries live in their own typed array, so a shared
-     * TC/TM VCID no longer needs disambiguation. */
-    TMGvcidManagedParameters_t gvcid_params;
-    uint16                     ocf_size  = 0;
-    uint16                     fecf_size = 0;
-    if (apqs_Get_TM_Managed_Parameters_For_Gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid,
-                                                 apqs_get_tm_gvcid_managed_parameters_array(),
-                                                 &gvcid_params) == CRYPTO_LIB_SUCCESS)
-    {
-        ocf_size  = (gvcid_params.has_ocf == TM_HAS_OCF) ? TM_OCF_SIZE : 0;
-        fecf_size = (gvcid_params.has_fecf == TM_HAS_FECF) ? 2 : 0;
-    }
-    TO_LAB_Global.tm_ocf_flag = (ocf_size > 0) ? 1 : 0;
-    TO_LAB_Global.tm_has_fecf = (fecf_size > 0);
-
-    /* SDLS gate: only route this GVCID through CryptoLib if it is SDLS-protected. The
-     * security-header and MAC sizes are SA-derived (SPI + IV + SN + PAD, and stmacf_len),
-     * so read them from the operational TM SA; clear channels carry neither. */
-    TO_LAB_Global.tm_is_sdls =
-        E2EQSS_Gvcid_Has_Sdls(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid);
-
-    uint16 sec_hdr_size = 0;
-    uint16 mac_size     = 0;
-    if (TO_LAB_Global.tm_is_sdls)
-    {
-        SecurityAssociation_t *sa = NULL;
-        if (apqs_get_sa_if()->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid,
-                                                    TO_LAB_Global.tm_vcid, 0, &sa) == CRYPTO_LIB_SUCCESS)
-        {
-            sec_hdr_size = SPI_LEN + sa->shivf_len + sa->shsnf_len + sa->shplf_len;
-            mac_size     = sa->stmacf_len;
-        }
-        else
-        {
-            /* SA not available yet: fall back to the legacy fixed sizes. */
-            sec_hdr_size = SDLS_SECURITY_HEADER_SIZE;
-            mac_size     = TM_MAC_SIZE;
-        }
-    }
-    TO_LAB_Global.tm_data_offset = TM_FRAME_HEADER_SIZE + sec_hdr_size;
-    TO_LAB_Global.tm_data_capacity =
-        TM_FRAME_MAX_SIZE - TO_LAB_Global.tm_data_offset - mac_size - ocf_size - fecf_size;
-
-    TO_LAB_Global.tm_mc_frame_count = 0;  /* Reset Master Channel counter */
-    TO_LAB_Global.tm_vc_frame_count = 0;  /* Reset Virtual Channel counter */
-    TO_LAB_Global.tm_span_len       = 0;  /* Clear any in-progress span */
-    TO_LAB_Global.tm_span_offset    = 0;
+    /* Reset all frame build state: MC counter, per-VC counters + geometry, any span.
+     * Geometry itself is derived per send (TO_LAB_DeriveVcGeometry), not cached here,
+     * so SAs created at runtime via SDLS EP are picked up. */
+    TO_LAB_Global.tm_mc_frame_count = 0;
+    memset(TO_LAB_Global.TmVc, 0, sizeof(TO_LAB_Global.TmVc));
+    TO_LAB_Global.tm_span_len    = 0;
+    TO_LAB_Global.tm_span_offset = 0;
 
     CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
-                      "TO: TM Frame Mode ENABLED - SCID=0x%04X, VCID=%d",
-                      TO_LAB_Global.tm_scid, TO_LAB_Global.tm_vcid);
+                      "TO: TM Frame Mode ENABLED - SCID=0x%04X, default VCID=%d, routing per subscription table",
+                      TO_LAB_Global.tm_scid, TO_LAB_Global.tm_default_vcid);
 }
 
 CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *data)
@@ -350,7 +300,7 @@ CFE_Status_t TO_LAB_EnableTMFrameModeCmd(const TO_LAB_EnableTMFrameModeCmd_t *da
 CFE_Status_t TO_LAB_DisableTMFrameModeCmd(const TO_LAB_DisableTMFrameModeCmd_t *data)
 {
     TO_LAB_Global.tm_frame_mode_enabled = false;
-    TO_LAB_Global.tm_span_len           = 0;  /* Discard any in-progress span */
+    TO_LAB_Global.tm_span_len           = 0; /* Discard any in-progress span */
     TO_LAB_Global.tm_span_offset        = 0;
 
     CFE_EVS_SendEvent(TO_LAB_DISABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
@@ -374,12 +324,12 @@ CFE_Status_t TO_LAB_EnableHkCmd(const TO_LAB_EnableHkCmd_t *data)
     for (i = 0; i < sizeof(TO_LAB_HkMids) / sizeof(TO_LAB_HkMids[0]); i++)
     {
         CFE_SB_MsgId_t mid = CFE_SB_ValueToMsgId(TO_LAB_HkMids[i]);
-        status = CFE_SB_SubscribeEx(mid, TO_LAB_Global.Tlm_pipe, CFE_SB_DEFAULT_QOS, 4);
+        status             = CFE_SB_SubscribeEx(mid, TO_LAB_Global.Tlm_pipe, CFE_SB_DEFAULT_QOS, 4);
         if (status != CFE_SUCCESS && status != CFE_SB_PIPE_CR_ERR)
         {
             CFE_EVS_SendEvent(TO_LAB_HK_SUB_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "TO EnableHK: Subscribe failed for MID 0x%x status %i",
-                              (unsigned int)TO_LAB_HkMids[i], (int)status);
+                              "TO EnableHK: Subscribe failed for MID 0x%x status %i", (unsigned int)TO_LAB_HkMids[i],
+                              (int)status);
         }
         else
         {
@@ -408,12 +358,12 @@ CFE_Status_t TO_LAB_DisableHkCmd(const TO_LAB_DisableHkCmd_t *data)
     for (i = 0; i < sizeof(TO_LAB_HkMids) / sizeof(TO_LAB_HkMids[0]); i++)
     {
         CFE_SB_MsgId_t mid = CFE_SB_ValueToMsgId(TO_LAB_HkMids[i]);
-        status = CFE_SB_Unsubscribe(mid, TO_LAB_Global.Tlm_pipe);
+        status             = CFE_SB_Unsubscribe(mid, TO_LAB_Global.Tlm_pipe);
         if (status != CFE_SUCCESS)
         {
             CFE_EVS_SendEvent(TO_LAB_HK_SUB_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "TO DisableHK: Unsubscribe failed for MID 0x%x status %i",
-                              (unsigned int)TO_LAB_HkMids[i], (int)status);
+                              "TO DisableHK: Unsubscribe failed for MID 0x%x status %i", (unsigned int)TO_LAB_HkMids[i],
+                              (int)status);
         }
         else
         {

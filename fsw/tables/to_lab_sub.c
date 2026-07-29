@@ -71,32 +71,33 @@ TO_LAB_Subs_t Subscriptions = {
     .Subs = {
         /* CFS App Subscriptions (examples) */
         /* Note: HK MIDs are NOT subscribed by default - use TO_LAB_ENABLE_HK_CC (CC=9) to opt in */
-        {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
 
         /* cFE Core subscriptions (non-HK) */
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DIAG_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DIAG_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
 
 #ifdef HAVE_APQS_APP
-        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_LONG_MIRROR_TLM_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_PERF_HK_TLM_MID), {0, 0}, 4},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_MIRROR_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_LONG_MIRROR_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_HS_PB_RESPONSE_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
+        {CFE_SB_MSGID_WRAP_VALUE(APQS_APP_PERF_HK_TLM_MID), {0, 0}, 4, TO_LAB_VCID_DEFAULT},
 #endif
 #ifdef HAVE_CF
-        {CFE_SB_MSGID_WRAP_VALUE(0x03e8), {0, 0}, 8},  /* CF CFDP output channel 0 (raw SpacePacket, no sec hdr, APID=1000) */
-        {CFE_SB_MSGID_WRAP_VALUE(0x08c3), {0, 0}, 8},  /* CF CFDP output channel 1 */
+        {CFE_SB_MSGID_WRAP_VALUE(0x03e8), {0, 0}, 8, TO_LAB_VCID_DEFAULT},  /* CF CFDP output channel 0 (raw SpacePacket, no sec hdr, APID=1000) */
+        {CFE_SB_MSGID_WRAP_VALUE(0x08c3), {0, 0}, 8, TO_LAB_VCID_DEFAULT},  /* CF CFDP output channel 1 */
 #endif
 
         /* SDLS Extended Procedures reply (published by CI_LAB on a dedicated EP-reply APID
-         * 0x07E -> MID 0x087E; NOT 0x0880, which is TO_LAB_HK_TLM_MID) */
-        {CFE_SB_MSGID_WRAP_VALUE(0x087E), {0, 0}, 4},
+         * 0x07E -> MID 0x087E; NOT 0x0880, which is TO_LAB_HK_TLM_MID).
+         * Pinned to TM VC 0: the static EP-reply SA (SPI 10) per the A16 channel layout. */
+        {CFE_SB_MSGID_WRAP_VALUE(0x087E), {0, 0}, 4, 0},
 
         /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
-        {CFE_SB_MSGID_RESERVED, {0, 0}, 0}
+        {CFE_SB_MSGID_RESERVED, {0, 0}, 0, TO_LAB_VCID_DEFAULT}
     }
 };
 

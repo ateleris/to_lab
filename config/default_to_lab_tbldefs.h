@@ -38,11 +38,15 @@
  * Macro Definitions
  ************************************************************************/
 
+/* Route this MID to the VC selected by the TM frame mode enable command (default VC) */
+#define TO_LAB_VCID_DEFAULT 0xFF
+
 typedef struct
 {
     CFE_SB_MsgId_t Stream;
     CFE_SB_Qos_t   Flags;
     uint16         BufLimit;
+    uint8          VCID; /* TM virtual channel for this MID: 0-7, or TO_LAB_VCID_DEFAULT */
 } TO_LAB_Sub_t;
 
 #endif

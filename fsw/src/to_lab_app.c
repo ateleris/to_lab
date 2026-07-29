@@ -38,8 +38,9 @@
 
 /* TM Transfer Frame layout constants (TM_FRAME_MAX_SIZE, TM_FRAME_HEADER_SIZE, ...) live in
  * to_lab_app.h, shared with to_lab_cmds.c. The per-channel security-header / MAC sizes and the
- * data-field offset/capacity are SA-derived and cached in TO_LAB_Global (tm_data_offset /
- * tm_data_capacity) by TO_LAB_EnableTMFrameMode. */
+ * data-field offset/capacity are SA-derived and computed per send by TO_LAB_DeriveVcGeometry
+ * into the per-VC state (TO_LAB_Global.TmVc), so SAs created at runtime via SDLS EP are
+ * picked up without re-enabling TM frame mode. */
 
 /* Data Field Status word components */
 #define TM_DFS_SEGMENT_LENGTH_ID  (0x3 << 11)   /* 11 = Space Packets (CCSDS 132.0-B-3 Table 4-3) */
@@ -91,7 +92,7 @@ void TO_LAB_AppMain(void)
             TO_LAB_Global.tm_frame_autostart_pending = false;
             TO_LAB_EnableTMFrameMode(TO_LAB_Global.tm_frame_autostart_vcid);
             CFE_EVS_SendEvent(TO_LAB_ENABLE_TM_FRAME_INF_EID, CFE_EVS_EventType_INFORMATION,
-                              "TO: TM frame mode auto-started on VCID %d (from TO_LAB_TM_FRAME_VCID)",
+                              "TO: TM frame mode auto-started, default VCID %d (from TO_LAB_TM_FRAME_VCID)",
                               TO_LAB_Global.tm_frame_autostart_vcid);
         }
 
@@ -337,25 +338,71 @@ void TO_LAB_openTLM(void)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
+/* TO_LAB_DeriveVcGeometry() -- Frame geometry for one VC          */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Derive the frame geometry for one VC from the CryptoLib TM managed parameters and the
+ * operational SA. Called per send (not cached at enable) so SAs created at runtime via
+ * SDLS EP are picked up. Returns false when the VC is SDLS-protected but has no
+ * operational SA yet: the caller must drop the packet, since a frame built with guessed
+ * geometry would disagree with what CryptoLib writes. */
+static bool TO_LAB_DeriveVcGeometry(uint8 vcid, TO_LAB_TMVirtualChannel_t *vc)
+{
+    TMGvcidManagedParameters_t gvcid_params;
+    uint16                     ocf_size     = 0;
+    uint16                     fecf_size    = 0;
+    uint16                     sec_hdr_size = 0;
+    uint16                     mac_size     = 0;
+
+    if (apqs_Get_TM_Managed_Parameters_For_Gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid,
+                                                 apqs_get_tm_gvcid_managed_parameters_array(),
+                                                 &gvcid_params) == CRYPTO_LIB_SUCCESS)
+    {
+        ocf_size  = (gvcid_params.has_ocf == TM_HAS_OCF) ? TM_OCF_SIZE : 0;
+        fecf_size = (gvcid_params.has_fecf == TM_HAS_FECF) ? 2 : 0;
+    }
+    vc->ocf_flag = (ocf_size > 0) ? 1 : 0;
+    vc->has_fecf = (fecf_size > 0);
+
+    vc->is_sdls = TM_Gvcid_Has_Sdls(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid);
+    if (vc->is_sdls)
+    {
+        SecurityAssociation_t *sa = NULL;
+        if (apqs_get_sa_if()->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid, 0,
+                                                               &sa) != CRYPTO_LIB_SUCCESS)
+        {
+            return false;
+        }
+        sec_hdr_size = SPI_LEN + sa->shivf_len + sa->shsnf_len + sa->shplf_len;
+        mac_size     = sa->stmacf_len;
+    }
+
+    vc->data_offset   = TM_FRAME_HEADER_SIZE + sec_hdr_size;
+    vc->data_capacity = TM_FRAME_MAX_SIZE - vc->data_offset - mac_size - ocf_size - fecf_size;
+    return true;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
 /* TO_LAB_WriteTMHeader() -- Build TM primary header into frame    */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
+static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer,
+                                 const TO_LAB_TMVirtualChannel_t *geom, uint8 vcid)
 {
     uint16 tfvn_scid_vcid;
     uint16 status_word;
 
     /* Bytes 0-1: TFVN(2) + SCID(10) + VCID(3) + OCF_Flag(1) */
-    tfvn_scid_vcid = (TO_LAB_Global.tm_tfvn << 14) | (TO_LAB_Global.tm_scid << 4) |
-                     (TO_LAB_Global.tm_vcid << 1) | TO_LAB_Global.tm_ocf_flag;
+    tfvn_scid_vcid = (TO_LAB_Global.tm_tfvn << 14) | (TO_LAB_Global.tm_scid << 4) | (vcid << 1) | geom->ocf_flag;
     tm_frame[0] = (tfvn_scid_vcid >> 8) & 0xFF;
     tm_frame[1] = tfvn_scid_vcid & 0xFF;
 
-    /* Byte 2: Master Channel Frame Count */
+    /* Byte 2: Master Channel Frame Count (global across VCs) */
     tm_frame[2] = TO_LAB_Global.tm_mc_frame_count & 0xFF;
 
-    /* Byte 3: Virtual Channel Frame Count */
-    tm_frame[3] = TO_LAB_Global.tm_vc_frame_count & 0xFF;
+    /* Byte 3: Virtual Channel Frame Count (per-VC per 132.0-B-3) */
+    tm_frame[3] = TO_LAB_Global.TmVc[vcid].vc_frame_count & 0xFF;
 
     /* Bytes 4-5: Transfer Frame Data Field Status
      * Bit 15:    TF Secondary Header Flag = 0
@@ -368,12 +415,12 @@ static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
     tm_frame[5] = status_word & 0xFF;
 
     /* Zero the SDLS security-header gap (filled by Crypto_TM_ApplySecurity). Its size is
-     * SA-derived; for clear channels tm_data_offset == TM_FRAME_HEADER_SIZE so nothing is written. */
-    memset(&tm_frame[TM_FRAME_HEADER_SIZE], 0, TO_LAB_Global.tm_data_offset - TM_FRAME_HEADER_SIZE);
+     * SA-derived; for clear channels data_offset == TM_FRAME_HEADER_SIZE so nothing is written. */
+    memset(&tm_frame[TM_FRAME_HEADER_SIZE], 0, geom->data_offset - TM_FRAME_HEADER_SIZE);
 
-    /* Increment frame counters */
+    /* Increment frame counters: MC globally, VC on this channel */
     TO_LAB_Global.tm_mc_frame_count++;
-    TO_LAB_Global.tm_vc_frame_count++;
+    TO_LAB_Global.TmVc[vcid].vc_frame_count++;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -383,11 +430,11 @@ static void TO_LAB_WriteTMHeader(uint8 *tm_frame, uint16 first_header_pointer)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Finalize a clear (non-SDLS) TM frame: no security header, no MAC. Write the frame-level
  * OCF (CLCW) and FECF the ground expects directly, since CryptoLib is bypassed. */
-static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame)
+static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame, const TO_LAB_TMVirtualChannel_t *geom)
 {
-    uint16 fecf_size = TO_LAB_Global.tm_has_fecf ? 2 : 0;
+    uint16 fecf_size = geom->has_fecf ? 2 : 0;
 
-    if (TO_LAB_Global.tm_ocf_flag)
+    if (geom->ocf_flag)
     {
         /* 4-byte OCF/CLCW immediately before the FECF. Ground expects 0x01000000. */
         uint16 ocf_loc        = TM_FRAME_MAX_SIZE - fecf_size - TM_OCF_SIZE;
@@ -397,7 +444,7 @@ static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame)
         tm_frame[ocf_loc + 3] = 0x00;
     }
 
-    if (TO_LAB_Global.tm_has_fecf)
+    if (geom->has_fecf)
     {
         uint16 fecf                     = apqs_Calc_FECF(tm_frame, TM_FRAME_MAX_SIZE - 2);
         tm_frame[TM_FRAME_MAX_SIZE - 2] = (fecf >> 8) & 0xFF;
@@ -405,22 +452,23 @@ static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame)
     }
 }
 
-static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAddr_t *d_addr)
+static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAddr_t *d_addr,
+                                const TO_LAB_TMVirtualChannel_t *geom, uint8 vcid)
 {
-    if (TO_LAB_Global.tm_is_sdls)
+    if (geom->is_sdls)
     {
         int32_t crypto_status = apqs_TM_ApplySecurity(tm_frame, tm_frame_len);
 
         if (crypto_status != CRYPTO_LIB_SUCCESS)
         {
             CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "TM frame encryption failed: %d", (int)crypto_status);
+                              "TM frame encryption failed on VCID %d: %d", vcid, (int)crypto_status);
             return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
         }
     }
     else
     {
-        TO_LAB_FinalizeClearTMFrame(tm_frame);
+        TO_LAB_FinalizeClearTMFrame(tm_frame, geom);
     }
 
     return OS_SocketSendTo(TO_LAB_Global.TLMsockid, tm_frame, tm_frame_len, d_addr);
@@ -433,18 +481,19 @@ static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAdd
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static CFE_Status_t TO_LAB_CreateContinuationFrame(uint8 *tm_frame, uint16 *tm_frame_len)
 {
-    uint32 capacity  = TO_LAB_Global.tm_data_capacity;
+    const TO_LAB_TMVirtualChannel_t *geom = &TO_LAB_Global.tm_span_geom;
+
+    uint32 capacity  = geom->data_capacity;
     uint32 remaining = TO_LAB_Global.tm_span_len - TO_LAB_Global.tm_span_offset;
     uint32 copy_len  = (remaining < capacity) ? remaining : capacity;
 
-    TO_LAB_WriteTMHeader(tm_frame, TM_FHP_CONTINUATION);
+    TO_LAB_WriteTMHeader(tm_frame, TM_FHP_CONTINUATION, geom, TO_LAB_Global.tm_span_vcid);
 
-    memcpy(&tm_frame[TO_LAB_Global.tm_data_offset], &TO_LAB_Global.tm_span_buf[TO_LAB_Global.tm_span_offset],
-           copy_len);
+    memcpy(&tm_frame[geom->data_offset], &TO_LAB_Global.tm_span_buf[TO_LAB_Global.tm_span_offset], copy_len);
 
     if (copy_len < capacity)
     {
-        memset(&tm_frame[TO_LAB_Global.tm_data_offset + copy_len], 0x55, capacity - copy_len);
+        memset(&tm_frame[geom->data_offset + copy_len], 0x55, capacity - copy_len);
     }
 
     TO_LAB_Global.tm_span_offset += copy_len;
@@ -457,6 +506,49 @@ static CFE_Status_t TO_LAB_CreateContinuationFrame(uint8 *tm_frame, uint16 *tm_f
 
     *tm_frame_len = TM_FRAME_MAX_SIZE;
     return CFE_SUCCESS;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* TO_LAB_ClassifyPacketVcid() -- Map an SB MsgId to its TM VC     */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Packet-to-VC assignment is a managed parameter per MID, kept in the subscription
+ * table (VCID column). Unmapped MIDs (e.g. runtime AddPacket subscriptions),
+ * TO_LAB_VCID_DEFAULT entries, and out-of-range values route to the default VC from
+ * the enable command. Linear scan: the table holds at most
+ * TO_LAB_MISSION_MAX_SUBSCRIPTIONS (50) entries. */
+static uint8 TO_LAB_ClassifyPacketVcid(CFE_SB_MsgId_t MsgId)
+{
+    uint16              i;
+    const TO_LAB_Sub_t *SubEntry = TO_LAB_Global.SubsTblPtr->Subs;
+
+    for (i = 0; i < TO_LAB_MISSION_MAX_SUBSCRIPTIONS; i++, SubEntry++)
+    {
+        if (!CFE_SB_IsValidMsgId(SubEntry->Stream))
+        {
+            break; /* End-of-table marker */
+        }
+
+        if (CFE_SB_MsgId_Equal(SubEntry->Stream, MsgId))
+        {
+            if (SubEntry->VCID < TO_LAB_VC_COUNT)
+            {
+                return SubEntry->VCID;
+            }
+
+            if (SubEntry->VCID != TO_LAB_VCID_DEFAULT && !TO_LAB_Global.tm_vcid_range_warned)
+            {
+                TO_LAB_Global.tm_vcid_range_warned = true;
+                CFE_EVS_SendEvent(TO_LAB_TM_VC_RANGE_ERR_EID, CFE_EVS_EventType_ERROR,
+                                  "TO: table VCID %d for MID 0x%x out of range (0-7) - using default VC",
+                                  SubEntry->VCID, (unsigned int)CFE_SB_MsgIdToValue(MsgId));
+            }
+            return TO_LAB_Global.tm_default_vcid;
+        }
+    }
+
+    return TO_LAB_Global.tm_default_vcid;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -497,18 +589,43 @@ void TO_LAB_forward_telemetry(void)
                 /* Check if TM frame mode is enabled */
                 if (TO_LAB_Global.tm_frame_mode_enabled)
                 {
-                    /* Build and send first (or only) frame for this SP */
-                    CfeStatus = TO_LAB_CreateTMFrame(SBBufPtr, tm_frame_buf, &tm_frame_len);
+                    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+                    CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MsgId);
 
-                    if (CfeStatus == CFE_SUCCESS)
+                    uint8                      vcid = TO_LAB_ClassifyPacketVcid(MsgId);
+                    TO_LAB_TMVirtualChannel_t *vc   = &TO_LAB_Global.TmVc[vcid];
+
+                    if (!TO_LAB_DeriveVcGeometry(vcid, vc))
                     {
-                        OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr);
-
-                        /* Drain continuation frames if SP was too large for one frame */
-                        while (OsStatus >= 0 && TO_LAB_Global.tm_span_len > 0)
+                        /* SDLS VC without an operational SA: drop, fail visibly (throttled),
+                         * never fall back to another VC (no silent downgrade). */
+                        if (!vc->sa_warned)
                         {
-                            TO_LAB_CreateContinuationFrame(tm_frame_buf, &tm_frame_len);
-                            OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr);
+                            vc->sa_warned = true;
+                            CFE_EVS_SendEvent(TO_LAB_TM_VC_NOSA_ERR_EID, CFE_EVS_EventType_ERROR,
+                                              "TO: VCID %d is SDLS-protected but has no operational SA - dropping",
+                                              vcid);
+                        }
+                    }
+                    else
+                    {
+                        vc->sa_warned = false;
+
+                        /* Build and send first (or only) frame for this SP */
+                        CfeStatus = TO_LAB_CreateTMFrame(SBBufPtr, tm_frame_buf, &tm_frame_len, vc, vcid);
+
+                        if (CfeStatus == CFE_SUCCESS)
+                        {
+                            OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr, vc, vcid);
+
+                            /* Drain continuation frames if SP was too large for one frame */
+                            while (OsStatus >= 0 && TO_LAB_Global.tm_span_len > 0)
+                            {
+                                TO_LAB_CreateContinuationFrame(tm_frame_buf, &tm_frame_len);
+                                OsStatus = TO_LAB_SendTMFrame(tm_frame_buf, tm_frame_len, &d_addr,
+                                                              &TO_LAB_Global.tm_span_geom,
+                                                              TO_LAB_Global.tm_span_vcid);
+                            }
                         }
                     }
                 }
@@ -549,7 +666,8 @@ void TO_LAB_forward_telemetry(void)
 /* TO_LAB_CreateTMFrame() -- Create TM Transfer Frame              */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame, uint16 *tm_frame_len)
+CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame, uint16 *tm_frame_len,
+                                  const TO_LAB_TMVirtualChannel_t *geom, uint8 vcid)
 {
     size_t       pkt_len;
     CFE_Status_t status;
@@ -570,25 +688,27 @@ CFE_Status_t TO_LAB_CreateTMFrame(const CFE_SB_Buffer_t *BufPtr, uint8 *tm_frame
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
 
-    copy_len = (pkt_len < TO_LAB_Global.tm_data_capacity) ? pkt_len : TO_LAB_Global.tm_data_capacity;
+    copy_len = (pkt_len < geom->data_capacity) ? pkt_len : geom->data_capacity;
 
     /* FHP = 0: SP header starts at byte 0 of the data field */
-    TO_LAB_WriteTMHeader(tm_frame, 0);
+    TO_LAB_WriteTMHeader(tm_frame, 0, geom, vcid);
 
-    memcpy(&tm_frame[TO_LAB_Global.tm_data_offset], BufPtr, copy_len);
+    memcpy(&tm_frame[geom->data_offset], BufPtr, copy_len);
 
-    if (copy_len < TO_LAB_Global.tm_data_capacity)
+    if (copy_len < geom->data_capacity)
     {
-        memset(&tm_frame[TO_LAB_Global.tm_data_offset + copy_len], 0x55,
-               TO_LAB_Global.tm_data_capacity - copy_len);
+        memset(&tm_frame[geom->data_offset + copy_len], 0x55, geom->data_capacity - copy_len);
     }
 
-    /* If SP exceeds one frame, store remainder for continuation frames */
-    if (pkt_len > TO_LAB_Global.tm_data_capacity)
+    /* If SP exceeds one frame, store remainder for continuation frames. Snapshot the
+     * geometry so an SA change mid-span cannot corrupt the tail. */
+    if (pkt_len > geom->data_capacity)
     {
         memcpy(TO_LAB_Global.tm_span_buf, (const uint8 *)BufPtr, pkt_len);
         TO_LAB_Global.tm_span_len    = pkt_len;
         TO_LAB_Global.tm_span_offset = copy_len;
+        TO_LAB_Global.tm_span_vcid   = vcid;
+        TO_LAB_Global.tm_span_geom   = *geom;
     }
 
     *tm_frame_len = TM_FRAME_MAX_SIZE;

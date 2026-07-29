@@ -52,6 +52,8 @@
 #define TO_LAB_ENABLE_HK_INF_EID  23
 #define TO_LAB_DISABLE_HK_INF_EID 24
 #define TO_LAB_HK_SUB_ERR_EID     25
+#define TO_LAB_TM_VC_NOSA_ERR_EID  26
+#define TO_LAB_TM_VC_RANGE_ERR_EID 27
 
 /******************************************************************************/
 
