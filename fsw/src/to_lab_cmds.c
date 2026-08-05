@@ -40,8 +40,6 @@
 #include "cfe_time_msgids.h"
 #include "cf_msgids.h"
 
-#include "apqs_api.h"
-
 /* HK MIDs managed by TO_LAB_EnableHkCmd / TO_LAB_DisableHkCmd */
 static const CFE_SB_MsgId_Atom_t TO_LAB_HkMids[] = {
     TO_LAB_HK_TLM_MID,   CFE_ES_HK_TLM_MID, CFE_EVS_HK_TLM_MID,          CFE_SB_HK_TLM_MID,          CFE_TBL_HK_TLM_MID,

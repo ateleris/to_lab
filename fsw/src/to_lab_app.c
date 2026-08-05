@@ -34,7 +34,7 @@
 #include "to_lab_msg.h"
 #include "to_lab_tbl.h"
 
-#include "apqs_api.h"
+#include "apqs_cfs_api.h"
 
 /* TM Transfer Frame layout constants (TM_FRAME_MAX_SIZE, TM_FRAME_HEADER_SIZE, ...) live in
  * to_lab_app.h, shared with to_lab_cmds.c. The per-channel security-header / MAC sizes and the
@@ -354,9 +354,9 @@ static bool TO_LAB_DeriveVcGeometry(uint8 vcid, TO_LAB_TMVirtualChannel_t *vc)
     uint16                     sec_hdr_size = 0;
     uint16                     mac_size     = 0;
 
-    if (apqs_Get_TM_Managed_Parameters_For_Gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid,
-                                                 apqs_get_tm_gvcid_managed_parameters_array(),
-                                                 &gvcid_params) == CRYPTO_LIB_SUCCESS)
+    if (APQS_CFS_GetTmManagedParametersForGvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid,
+                                                APQS_CFS_GetTmManagedParametersArray(),
+                                                &gvcid_params) == APQS_CFS_SUCCESS)
     {
         ocf_size  = (gvcid_params.has_ocf == TM_HAS_OCF) ? TM_OCF_SIZE : 0;
         fecf_size = (gvcid_params.has_fecf == TM_HAS_FECF) ? 2 : 0;
@@ -364,12 +364,12 @@ static bool TO_LAB_DeriveVcGeometry(uint8 vcid, TO_LAB_TMVirtualChannel_t *vc)
     vc->ocf_flag = (ocf_size > 0) ? 1 : 0;
     vc->has_fecf = (fecf_size > 0);
 
-    vc->is_sdls = TM_Gvcid_Has_Sdls(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid);
+    vc->is_sdls = APQS_CFS_TM_GvcidHasSdls(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid);
     if (vc->is_sdls)
     {
         SecurityAssociation_t *sa = NULL;
-        if (apqs_get_sa_if()->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid, vcid, 0,
-                                                               &sa) != CRYPTO_LIB_SUCCESS)
+        if (APQS_CFS_GetSaInterface()->sa_get_operational_sa_from_gvcid(TO_LAB_Global.tm_tfvn, TO_LAB_Global.tm_scid,
+                                                                        vcid, 0, &sa) != APQS_CFS_SUCCESS)
         {
             return false;
         }
@@ -446,7 +446,7 @@ static void TO_LAB_FinalizeClearTMFrame(uint8 *tm_frame, const TO_LAB_TMVirtualC
 
     if (geom->has_fecf)
     {
-        uint16 fecf                     = apqs_Calc_FECF(tm_frame, TM_FRAME_MAX_SIZE - 2);
+        uint16 fecf                     = APQS_CFS_CalcFecf(tm_frame, TM_FRAME_MAX_SIZE - 2);
         tm_frame[TM_FRAME_MAX_SIZE - 2] = (fecf >> 8) & 0xFF;
         tm_frame[TM_FRAME_MAX_SIZE - 1] = fecf & 0xFF;
     }
@@ -457,9 +457,9 @@ static int32 TO_LAB_SendTMFrame(uint8 *tm_frame, uint16 tm_frame_len, OS_SockAdd
 {
     if (geom->is_sdls)
     {
-        int32_t crypto_status = apqs_TM_ApplySecurity(tm_frame, tm_frame_len);
+        int32_t crypto_status = APQS_CFS_TM_ApplySecurity(tm_frame, tm_frame_len);
 
-        if (crypto_status != CRYPTO_LIB_SUCCESS)
+        if (crypto_status != APQS_CFS_SUCCESS)
         {
             CFE_EVS_SendEvent(TO_LAB_ENCODE_ERR_EID, CFE_EVS_EventType_ERROR,
                               "TM frame encryption failed on VCID %d: %d", vcid, (int)crypto_status);

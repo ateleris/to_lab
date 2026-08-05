@@ -40,3 +40,7 @@ target_include_directories(to_lab PUBLIC fsw/inc)
 # Mission defs hold the shared E2EQSS SDLS-GVCID config (e2eqss_sdls_cfg.h)
 target_include_directories(to_lab PRIVATE ${MISSION_DEFS})
 add_cfe_app_dependency(to_lab apqs_lib)
+# to_lab_cmds.c includes cf_msgids.h. Pre-existing gap: it resolved only because
+# something earlier in the build happened to put cf's fsw/inc on the compile
+# line, which is not a guarantee the build system makes.
+add_cfe_app_dependency(to_lab cf)
